@@ -9,7 +9,7 @@ import diskcache
 import httpx
 from platformdirs import user_data_dir
 
-from tokonomics.toko_types import ModelCosts, TokenUsage
+from tokonomics.toko_types import ModelCosts, TokenCosts
 
 
 logger = logging.getLogger(__name__)
@@ -130,30 +130,47 @@ async def get_model_costs(
 
 async def calculate_token_cost(
     model: str,
-    token_usage: TokenUsage,
+    prompt_tokens: int | None,
+    completion_tokens: int | None,
     *,
     cache_timeout: int = _CACHE_TIMEOUT,
-) -> float | None:
-    """Calculate total cost for token usage based on model pricing.
+) -> TokenCosts | None:
+    """Calculate detailed costs for token usage based on model pricing.
 
     Combines input and output token counts with their respective costs to
-    calculate the total cost of the usage.
+    calculate the breakdown of costs. If either token count is None, it will
+    be treated as 0 tokens.
 
     Args:
-        model: Name of the model used
-        token_usage: Dictionary containing 'prompt' and 'completion' token counts
+        model: Name of the model used (e.g. "gpt-4", "openai:gpt-3.5-turbo")
+        prompt_tokens: Number of tokens in the prompt/input, or None
+        completion_tokens: Number of tokens in the completion/output, or None
         cache_timeout: Number of seconds to keep prices in cache (default: 24 hours)
 
     Returns:
-        float | None: Total cost in dollars if pricing data available, None otherwise
+        TokenCosts | None: Detailed cost breakdown if pricing data available
     """
     costs = await get_model_costs(model, cache_timeout=cache_timeout)
-    if costs:
-        prompt_cost = token_usage["prompt"] * costs["input_cost_per_token"]
-        completion_cost = token_usage["completion"] * costs["output_cost_per_token"]
-        total_cost = float(prompt_cost + completion_cost)
-        msg = "Cost calculation - prompt: $%.6f, completion: $%.6f, total: $%.6f"
-        logger.debug(msg, prompt_cost, completion_cost, total_cost)
-        return total_cost
-    logger.debug("No costs found for model")
-    return None
+    if not costs:
+        logger.debug("No costs found for model")
+        return None
+
+    # Convert None values to 0
+    prompt_count = prompt_tokens or 0
+    completion_count = completion_tokens or 0
+
+    prompt_cost = prompt_count * costs["input_cost_per_token"]
+    completion_cost = completion_count * costs["output_cost_per_token"]
+
+    token_costs = TokenCosts(
+        prompt_cost=float(prompt_cost),
+        completion_cost=float(completion_cost),
+    )
+
+    logger.debug(
+        "Cost calculation - prompt: $%.6f, completion: $%.6f, total: $%.6f",
+        token_costs.prompt_cost,
+        token_costs.completion_cost,
+        token_costs.total_cost,
+    )
+    return token_costs

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from dataclasses import dataclass
 from typing import TypedDict
 
 
@@ -21,3 +22,18 @@ class TokenUsage(TypedDict):
     """Tokens used in the prompt"""
     completion: int
     """Tokens used in the completion"""
+
+
+@dataclass(frozen=True, slots=True)
+class TokenCosts:
+    """Detailed breakdown of token costs."""
+
+    prompt_cost: float
+    """Cost for prompt tokens"""
+    completion_cost: float
+    """Cost for completion tokens"""
+
+    @property
+    def total_cost(self) -> float:
+        """Calculate total cost as sum of prompt and completion costs."""
+        return self.prompt_cost + self.completion_cost

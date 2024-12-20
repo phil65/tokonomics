@@ -31,7 +31,6 @@
 [Read the documentation!](https://phil65.github.io/tokonomics/)
 
 
-
 Calculate costs for LLM usage based on token counts using LiteLLM's pricing data.
 
 ## Installation
@@ -43,6 +42,7 @@ pip install tokonomics
 ## Features
 
 - Automatic cost calculation for various LLM models
+- Detailed cost breakdown (prompt, completion, and total costs)
 - Caches pricing data locally (24-hour default cache duration)
 - Supports multiple model name formats (e.g., "gpt-4", "openai:gpt-4")
 - Asynchronous API
@@ -53,20 +53,20 @@ pip install tokonomics
 
 ```python
 import asyncio
-from tokonomics import calculate_token_cost, TokenUsage
+from tokonomics import calculate_token_cost
 
 async def main():
-    # Define your token usage
-    usage = TokenUsage(
-        prompt=100,      # tokens used in the prompt
-        completion=50,   # tokens used in the completion
-        total=150        # total tokens used
+    # Calculate cost with token counts
+    costs = await calculate_token_cost(
+        model="gpt-4",
+        prompt_tokens=100,    # tokens used in the prompt
+        completion_tokens=50,  # tokens used in the completion
     )
 
-    # Calculate cost
-    cost = await calculate_token_cost("gpt-4", usage)
-    if cost:
-        print(f"Total cost: ${cost:.6f}")
+    if costs:
+        print(f"Prompt cost: ${costs.prompt_cost:.6f}")
+        print(f"Completion cost: ${costs.completion_cost:.6f}")
+        print(f"Total cost: ${costs.total_cost:.6f}")
     else:
         print("Could not determine cost for model")
 
@@ -80,6 +80,9 @@ from tokonomics import get_model_costs
 
 # Get model costs with custom cache duration (e.g., 1 hour)
 costs = await get_model_costs("gpt-4", cache_timeout=3600)
+if costs:
+    print(f"Input cost per token: ${costs['input_cost_per_token']}")
+    print(f"Output cost per token: ${costs['output_cost_per_token']}")
 ```
 
 ## Model Name Support
@@ -101,6 +104,8 @@ Pricing data is sourced from [LiteLLM's pricing repository](https://github.com/B
 - `httpx`
 - `diskcache`
 - `platformdirs`
+- `upath`
+- `pydantic` (≥ 2.0)
 
 ## License
 

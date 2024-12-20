@@ -2,17 +2,15 @@
 
 from __future__ import annotations
 
-from pathlib import Path
 import shutil
 
 import diskcache
 import httpx
-from platformdirs import user_data_dir
 import pytest
 import respx
+from upath import UPath
 
 from tokonomics import calculate_token_cost, get_model_costs
-from tokonomics.toko_types import TokenUsage
 
 
 SAMPLE_PRICING_DATA = {
@@ -26,14 +24,8 @@ SAMPLE_PRICING_DATA = {
     },
 }
 
-SAMPLE_TOKEN_USAGE = TokenUsage(
-    prompt=10,
-    completion=20,
-    total=30,
-)
-
 # Use a test-specific cache directory
-TEST_CACHE_DIR = Path(user_data_dir("tokonomics", "tokonomics")) / "pricing"
+TEST_CACHE_DIR = UPath("~/.cache/tokonomics/test_pricing").expanduser()
 
 
 @pytest.fixture(autouse=True)
@@ -46,8 +38,8 @@ def setup_teardown():
         tokonomics.core._cost_cache.close()
 
     if TEST_CACHE_DIR.exists():
-        shutil.rmtree(TEST_CACHE_DIR)
-    TEST_CACHE_DIR.mkdir(parents=True)
+        shutil.rmtree(str(TEST_CACHE_DIR))
+    TEST_CACHE_DIR.mkdir(parents=True, exist_ok=True)
 
     # Point the cache to our test directory
     tokonomics.core._cost_cache = diskcache.Cache(str(TEST_CACHE_DIR))
@@ -57,7 +49,7 @@ def setup_teardown():
     # Teardown: clean up
     tokonomics.core._cost_cache.close()
     if TEST_CACHE_DIR.exists():
-        shutil.rmtree(TEST_CACHE_DIR)
+        shutil.rmtree(str(TEST_CACHE_DIR))
 
 
 @pytest.fixture
@@ -65,7 +57,8 @@ def mock_litellm_api():
     """Mock LiteLLM API responses."""
     with respx.mock(assert_all_mocked=True, assert_all_called=True) as respx_mock:
         route = respx_mock.get(
-            "https://raw.githubusercontent.com/BerriAI/litellm/main/model_prices_and_context_window.json"
+            "https://raw.githubusercontent.com/BerriAI/litellm/main/"
+            "model_prices_and_context_window.json"
         )
         route.mock(return_value=httpx.Response(200, json=SAMPLE_PRICING_DATA))
         yield respx_mock
@@ -112,26 +105,51 @@ async def test_get_model_costs_unknown_model(mock_litellm_api):
 @pytest.mark.asyncio
 async def test_calculate_token_cost_success(mock_litellm_api):
     """Test successful token cost calculation."""
-    cost = await calculate_token_cost("gpt-4", SAMPLE_TOKEN_USAGE, cache_timeout=1)
-    assert cost is not None
-    # 10 tokens * 0.03 + 20 tokens * 0.06 = 1.5
-    assert cost == 1.5  # noqa: PLR2004
+    costs = await calculate_token_cost(
+        model="gpt-4",
+        prompt_tokens=10,
+        completion_tokens=20,
+        cache_timeout=1,
+    )
+    assert costs is not None
+    assert costs.prompt_cost == 0.3  # 10 tokens * 0.03  # noqa: PLR2004
+    assert costs.completion_cost == 1.2  # 20 tokens * 0.06  # noqa: PLR2004
+    assert costs.total_cost == 1.5  # 0.3 + 1.2  # noqa: PLR2004
+
+
+@pytest.mark.asyncio
+async def test_calculate_token_cost_with_none(mock_litellm_api):
+    """Test token cost calculation with None values."""
+    costs = await calculate_token_cost(
+        model="gpt-4",
+        prompt_tokens=None,
+        completion_tokens=20,
+        cache_timeout=1,
+    )
+    assert costs is not None
+    assert costs.prompt_cost == 0.0
+    assert costs.completion_cost == 1.2  # 20 tokens * 0.06  # noqa: PLR2004
+    assert costs.total_cost == 1.2  # noqa: PLR2004
 
 
 @pytest.mark.asyncio
 async def test_calculate_token_cost_unknown_model(mock_litellm_api):
     """Test token cost calculation with unknown model."""
-    cost = await calculate_token_cost(
-        "unknown-model", SAMPLE_TOKEN_USAGE, cache_timeout=1
+    costs = await calculate_token_cost(
+        model="unknown-model",
+        prompt_tokens=10,
+        completion_tokens=20,
+        cache_timeout=1,
     )
-    assert cost is None
+    assert costs is None
 
 
 @pytest.mark.asyncio
 async def test_api_error(mock_litellm_api):
     """Test behavior when API request fails."""
     mock_litellm_api.get(
-        "https://raw.githubusercontent.com/BerriAI/litellm/main/model_prices_and_context_window.json"
+        "https://raw.githubusercontent.com/BerriAI/litellm/main/"
+        "model_prices_and_context_window.json"
     ).mock(return_value=httpx.Response(500))
     costs = await get_model_costs("gpt-4", cache_timeout=1)
     assert costs is None
