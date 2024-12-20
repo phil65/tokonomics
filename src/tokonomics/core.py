@@ -1,0 +1,159 @@
+"""Utilities for calculating token costs using LiteLLM pricing data."""
+
+from __future__ import annotations
+
+import logging
+import pathlib
+
+import diskcache
+import httpx
+from platformdirs import user_data_dir
+
+from tokonomics.toko_types import ModelCosts, TokenUsage
+
+
+logger = logging.getLogger(__name__)
+
+
+# Cache cost data persistently
+PRICING_DIR = pathlib.Path(user_data_dir("tokonomics", "tokonomics")) / "pricing"
+PRICING_DIR.mkdir(parents=True, exist_ok=True)
+_cost_cache = diskcache.Cache(directory=str(PRICING_DIR))
+
+# Cache timeout in seconds (24 hours)
+_CACHE_TIMEOUT = 86400
+
+LITELLM_PRICES_URL = "https://raw.githubusercontent.com/BerriAI/litellm/main/model_prices_and_context_window.json"
+
+
+def find_litellm_model_name(model: str) -> str | None:
+    """Find matching model name in LiteLLM pricing data.
+
+    Attempts to match the input model name against cached LiteLLM pricing data
+    by trying different formats (direct match, base name, provider format).
+
+    Args:
+        model: Input model name (e.g. "openai:gpt-4", "gpt-4")
+
+    Returns:
+        str | None: Matching LiteLLM model name if found in cache, None otherwise
+    """
+    logger.debug("Looking up model costs for: %s", model)
+
+    # Normalize case
+    model = model.lower()
+
+    # First check direct match
+    if model in _cost_cache:
+        logger.debug("Found direct cache match for: %s", model)
+        return model
+
+    # For provider:model format, try both variants
+    if ":" in model:
+        provider, model_name = model.split(":", 1)
+        # Try just model name (normalized)
+        model_name = model_name.lower()
+        if _cost_cache.get(model_name, None) is not None:
+            logger.debug("Found cache match for base name: %s", model_name)
+            return model_name
+        # Try provider/model format (normalized)
+        provider_format = f"{provider.lower()}/{model_name}"
+        if _cost_cache.get(provider_format, None) is not None:
+            logger.debug("Found cache match for provider format: %s", provider_format)
+            return provider_format
+
+    logger.debug("No cache match found for: %s", model)
+    return None
+
+
+async def get_model_costs(
+    model: str,
+    *,
+    cache_timeout: int = _CACHE_TIMEOUT,
+) -> ModelCosts | None:
+    """Get cost information for a model from LiteLLM pricing data.
+
+    Attempts to find model costs in cache first. If not found, downloads fresh
+    pricing data from LiteLLM's GitHub repository and updates the cache.
+
+    Args:
+        model: Name of the model to look up costs for
+        cache_timeout: Number of seconds to keep prices in cache (default: 24 hours)
+
+    Returns:
+        ModelCosts | None: Model's cost information if found, None otherwise
+    """
+    # Find matching model name in LiteLLM format
+    if litellm_name := find_litellm_model_name(model):
+        return _cost_cache.get(litellm_name)  # pyright: ignore
+
+    # Not in cache, try to fetch
+    try:
+        logger.debug("Downloading pricing data from LiteLLM...")
+        async with httpx.AsyncClient() as client:
+            response = await client.get(LITELLM_PRICES_URL)
+            response.raise_for_status()
+            data = response.json()
+        logger.debug("Successfully downloaded pricing data")
+
+        # Extract just the cost information we need
+        all_costs: dict[str, ModelCosts] = {}
+        for name, info in data.items():
+            if not isinstance(info, dict):  # Skip sample_spec
+                continue
+            if "input_cost_per_token" not in info or "output_cost_per_token" not in info:
+                continue
+            # Store with normalized case
+            all_costs[name.lower()] = ModelCosts(
+                input_cost_per_token=float(info["input_cost_per_token"]),
+                output_cost_per_token=float(info["output_cost_per_token"]),
+            )
+
+        logger.debug("Extracted costs for %d models", len(all_costs))
+
+        # Update cache with all costs
+        for model_name, cost_info in all_costs.items():
+            _cost_cache.set(model_name, cost_info, expire=cache_timeout)
+        logger.debug("Updated cache with new pricing data")
+
+        # Return costs for requested model
+        if model in all_costs:
+            logger.debug("Found costs for requested model: %s", model)
+            return all_costs[model]
+    except Exception as e:  # noqa: BLE001
+        logger.debug("Failed to get model costs: %s", e)
+        return None
+    else:
+        logger.debug("No costs found for model: %s", model)
+        return None
+
+
+async def calculate_token_cost(
+    model: str,
+    token_usage: TokenUsage,
+    *,
+    cache_timeout: int = _CACHE_TIMEOUT,
+) -> float | None:
+    """Calculate total cost for token usage based on model pricing.
+
+    Combines input and output token counts with their respective costs to
+    calculate the total cost of the usage.
+
+    Args:
+        model: Name of the model used
+        token_usage: Dictionary containing 'prompt' and 'completion' token counts
+        cache_timeout: Number of seconds to keep prices in cache (default: 24 hours)
+
+    Returns:
+        float | None: Total cost in dollars if pricing data available, None otherwise
+    """
+    costs = await get_model_costs(model, cache_timeout=cache_timeout)
+    if costs:
+        prompt_cost = token_usage["prompt"] * costs["input_cost_per_token"]
+        completion_cost = token_usage["completion"] * costs["output_cost_per_token"]
+        total_cost = float(prompt_cost + completion_cost)
+        msg = "Cost calculation - prompt: $%.6f, completion: $%.6f, total: $%.6f"
+        logger.debug(msg, prompt_cost, completion_cost, total_cost)
+        return total_cost
+    logger.debug("No costs found for model")
+    return None
