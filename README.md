@@ -85,6 +85,25 @@ if costs:
     print(f"Output cost per token: ${costs['output_cost_per_token']}")
 ```
 
+### Pydantic-AI Integration
+
+If you're using pydantic-ai, you can directly calculate costs from its Usage objects:
+
+```python
+from tokonomics import calculate_pydantic_cost
+
+# Assuming you have a pydantic-ai Usage object
+costs = await calculate_pydantic_cost(
+    model="gpt-4",
+    usage=usage_object,
+)
+
+if costs:
+    print(f"Prompt cost: ${costs.prompt_cost:.6f}")
+    print(f"Completion cost: ${costs.completion_cost:.6f}")
+    print(f"Total cost: ${costs.total_cost:.6f}")
+```
+
 ## Model Name Support
 
 The library supports multiple formats for model names:
