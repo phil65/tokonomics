@@ -2,13 +2,13 @@
 
 from __future__ import annotations
 
+from pathlib import Path
 import shutil
 
 import diskcache
 import httpx
 import pytest
 import respx
-from upath import UPath
 
 from tokonomics import calculate_token_cost, get_model_costs
 
@@ -25,7 +25,7 @@ SAMPLE_PRICING_DATA = {
 }
 
 # Use a test-specific cache directory
-TEST_CACHE_DIR = UPath("~/.cache/tokonomics/test_pricing").expanduser()
+TEST_CACHE_DIR = Path("~/.cache/tokonomics/test_pricing").expanduser()
 
 
 @pytest.fixture(autouse=True)
