@@ -1,4 +1,4 @@
-__version__ = "0.2.0"
+__version__ = "0.2.1"
 
 from tokonomics.toko_types import ModelCosts, TokenCosts, TokenLimits
 from tokonomics.core import get_model_costs, calculate_token_cost, get_model_limits
