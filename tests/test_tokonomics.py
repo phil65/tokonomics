@@ -11,16 +11,21 @@ import pytest
 import respx
 
 from tokonomics import calculate_token_cost, get_model_costs
+from tokonomics.core import get_model_limits
 
 
 SAMPLE_PRICING_DATA = {
     "gpt-4": {
         "input_cost_per_token": 0.03,
         "output_cost_per_token": 0.06,
+        "max_tokens": 8192,
+        "max_input_tokens": 6144,
+        "max_output_tokens": 2048,
     },
     "gpt-3.5-turbo": {
         "input_cost_per_token": 0.001,
         "output_cost_per_token": 0.002,
+        "max_tokens": 4096,
     },
 }
 
@@ -55,7 +60,7 @@ def setup_teardown():
 @pytest.fixture
 def mock_litellm_api():
     """Mock LiteLLM API responses."""
-    with respx.mock(assert_all_mocked=True, assert_all_called=True) as respx_mock:
+    with respx.mock(assert_all_mocked=True) as respx_mock:
         route = respx_mock.get(
             "https://raw.githubusercontent.com/BerriAI/litellm/main/"
             "model_prices_and_context_window.json"
@@ -153,3 +158,23 @@ async def test_api_error(mock_litellm_api):
     ).mock(return_value=httpx.Response(500))
     costs = await get_model_costs("gpt-4", cache_timeout=1)
     assert costs is None
+
+
+@pytest.mark.asyncio
+async def test_get_model_limits_success(mock_litellm_api):
+    """Test successful model limit retrieval."""
+    limits = await get_model_limits("gpt-4", cache_timeout=1)
+    assert limits is not None
+    assert limits.total_tokens == 8192  # noqa: PLR2004
+    assert limits.input_tokens == 6144  # noqa: PLR2004
+    assert limits.output_tokens == 2048  # noqa: PLR2004
+
+
+@pytest.mark.asyncio
+async def test_get_model_limits_fallback(mock_litellm_api):
+    """Test limits fallback to max_tokens when specific limits aren't provided."""
+    limits = await get_model_limits("gpt-3.5-turbo", cache_timeout=1)
+    assert limits is not None
+    assert limits.total_tokens == 4096  # noqa: PLR2004
+    assert limits.input_tokens == 4096  # Fallback to max_tokens  # noqa: PLR2004
+    assert limits.output_tokens == 4096  # Fallback to max_tokens  # noqa: PLR2004

@@ -4,12 +4,13 @@ from __future__ import annotations
 
 import logging
 import pathlib
+from typing import cast
 
 import diskcache
 import httpx
 from platformdirs import user_data_dir
 
-from tokonomics.toko_types import ModelCosts, TokenCosts
+from tokonomics.toko_types import ModelCosts, TokenCosts, TokenLimits
 
 
 logger = logging.getLogger(__name__)
@@ -174,3 +175,75 @@ async def calculate_token_cost(
         token_costs.total_cost,
     )
     return token_costs
+
+
+async def get_model_limits(
+    model: str,
+    *,
+    cache_timeout: int = _CACHE_TIMEOUT,
+) -> TokenLimits | None:
+    """Get token limit information for a model from LiteLLM data.
+
+    Args:
+        model: Name of the model to look up limits for
+        cache_timeout: Number of seconds to keep limits in cache (default: 24 hours)
+
+    Returns:
+        TokenLimits | None: Model's token limits if found, None otherwise
+    """
+    # Normalize case for initial lookup
+    normalized_model = model.lower()
+    cache_key = f"{normalized_model}_limits"
+
+    # Check cache first
+    cached_limits = cast(TokenLimits | None, _cost_cache.get(cache_key))
+    if cached_limits is not None:
+        return cached_limits
+
+    try:
+        logger.debug("Downloading model data from LiteLLM...")
+        async with httpx.AsyncClient() as client:
+            response = await client.get(LITELLM_PRICES_URL)
+            response.raise_for_status()
+            data = response.json()
+        logger.debug("Successfully downloaded model data")
+
+        # Extract all model limits
+        all_limits: dict[str, TokenLimits] = {}
+        for name, info in data.items():
+            if not isinstance(info, dict):  # Skip sample_spec
+                continue
+
+            # Get the token limits with fallbacks
+            max_tokens = int(info.get("max_tokens", 0))
+            max_input = int(info.get("max_input_tokens", max_tokens))
+            max_output = int(info.get("max_output_tokens", max_tokens))
+
+            if any((max_tokens, max_input, max_output)):
+                # Store with normalized case
+                all_limits[name.lower()] = TokenLimits(
+                    total_tokens=max_tokens,
+                    input_tokens=max_input,
+                    output_tokens=max_output,
+                )
+
+        logger.debug("Extracted limits for %d models", len(all_limits))
+
+        # Update cache with all limits
+        for model_name, limit_info in all_limits.items():
+            limit_cache_key = f"{model_name}_limits"
+            _cost_cache.set(limit_cache_key, limit_info, expire=cache_timeout)
+            # Also cache the model name for find_litellm_model_name
+            _cost_cache.set(model_name, {}, expire=cache_timeout)
+        logger.debug("Updated cache with new limit data")
+
+        # Return limits for requested model
+        if normalized_model in all_limits:
+            logger.debug("Found limits for requested model: %s", model)
+            return all_limits[normalized_model]
+    except Exception as e:
+        error_msg = "Failed to get model limits"
+        logger.exception(error_msg)
+        raise ValueError(error_msg) from e
+    else:
+        return None

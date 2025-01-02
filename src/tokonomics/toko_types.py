@@ -37,3 +37,15 @@ class TokenCosts:
     def total_cost(self) -> float:
         """Calculate total cost as sum of prompt and completion costs."""
         return self.prompt_cost + self.completion_cost
+
+
+@dataclass(frozen=True, slots=True)
+class TokenLimits:
+    """Token limits for a model."""
+
+    total_tokens: int
+    """Maximum total tokens (input + output) supported"""
+    input_tokens: int
+    """Maximum input/prompt tokens supported"""
+    output_tokens: int
+    """Maximum output/completion tokens supported"""
