@@ -47,7 +47,7 @@ async def calculate_pydantic_cost(
 
 async def calculate_pydantic_cost(
     model: str,
-    usage: Usage,
+    usage: Usage | None,
     *,
     cache_timeout: int = 86400,
 ) -> TokenCosts | None:
