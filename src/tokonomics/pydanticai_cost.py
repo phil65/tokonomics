@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import logging
-from typing import TYPE_CHECKING, Protocol, runtime_checkable
+from typing import TYPE_CHECKING, Protocol, overload, runtime_checkable
 
 from tokonomics.core import calculate_token_cost
 
@@ -25,6 +25,24 @@ class Usage(Protocol):
     """Number of tokens in the request/prompt"""
     response_tokens: int | None
     """Number of tokens in the response/completion"""
+
+
+@overload
+async def calculate_pydantic_cost(
+    model: str,
+    usage: None,
+    *,
+    cache_timeout: int = 86400,
+) -> None: ...
+
+
+@overload
+async def calculate_pydantic_cost(
+    model: str,
+    usage: Usage,
+    *,
+    cache_timeout: int = 86400,
+) -> TokenCosts | None: ...
 
 
 async def calculate_pydantic_cost(
