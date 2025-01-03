@@ -5,7 +5,8 @@ from __future__ import annotations
 from httpx import AsyncClient
 import pytest
 
-from tokonomics.core import TokenLimits, get_model_limits
+from tokonomics.core import TokenLimits, get_model_costs, get_model_limits
+from tokonomics.toko_types import ModelCosts
 
 
 @pytest.mark.asyncio
@@ -61,6 +62,59 @@ async def test_get_model_limits_handles_non_numeric_values(
         input_tokens=24000,
         output_tokens=8000,
     )
+
+
+@pytest.mark.asyncio
+async def test_get_model_costs_handles_non_numeric_values(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Test handling of non-numeric values in cost data."""
+    mock_data = {
+        "sample_spec": "skip me",
+        "valid-model": {
+            "input_cost_per_token": "0.001",
+            "output_cost_per_token": 0.002,
+        },
+        "broken-model": {
+            "input_cost_per_token": "contact sales for pricing",
+            "output_cost_per_token": "varies by usage",
+        },
+        "float-model": {
+            "input_cost_per_token": "0.001500",
+            "output_cost_per_token": "0.002000",
+        },
+        "missing-fields": {
+            "some_other_field": "value",
+        },
+    }
+
+    async def mock_get(*args: object, **kwargs: object) -> MockResponse:
+        return MockResponse(mock_data)  # type: ignore
+
+    # Patch httpx.AsyncClient.get
+    monkeypatch.setattr(AsyncClient, "get", mock_get)
+
+    # Test valid model
+    valid_costs = await get_model_costs("valid-model")
+    assert valid_costs == ModelCosts(
+        input_cost_per_token=0.001,
+        output_cost_per_token=0.002,
+    )
+
+    # Test model with non-numeric values
+    broken_costs = await get_model_costs("broken-model")
+    assert broken_costs is None
+
+    # Test model with longer float values
+    float_costs = await get_model_costs("float-model")
+    assert float_costs == ModelCosts(
+        input_cost_per_token=0.0015,
+        output_cost_per_token=0.002,
+    )
+
+    # Test model with missing cost fields
+    missing_costs = await get_model_costs("missing-fields")
+    assert missing_costs is None
 
 
 class MockResponse:

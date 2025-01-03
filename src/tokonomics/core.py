@@ -98,11 +98,13 @@ async def get_model_costs(
     Returns:
         ModelCosts | None: Model's cost information if found, None otherwise
     """
-    # Find matching model name in LiteLLM format
-    if litellm_name := find_litellm_model_name(model):
-        return _cost_cache.get(litellm_name)  # pyright: ignore
+    normalized_model = model.lower()
+    cache_key = f"{normalized_model}_costs"
 
-    # Not in cache, try to fetch
+    cached_costs = cast(ModelCosts | None, _cost_cache.get(cache_key))
+    if cached_costs is not None:
+        return cached_costs
+
     try:
         logger.debug("Downloading pricing data from LiteLLM...")
         async with httpx.AsyncClient() as client:
@@ -111,36 +113,58 @@ async def get_model_costs(
             data = response.json()
         logger.debug("Successfully downloaded pricing data")
 
-        # Extract just the cost information we need
         all_costs: dict[str, ModelCosts] = {}
         for name, info in data.items():
             if not isinstance(info, dict):  # Skip sample_spec
                 continue
-            if "input_cost_per_token" not in info or "output_cost_per_token" not in info:
+
+            # Get cost values safely
+            input_cost = info.get("input_cost_per_token")
+            output_cost = info.get("output_cost_per_token")
+
+            # Skip if values are missing
+            if input_cost is None or output_cost is None:
+                logger.debug("Skipping model %s - missing cost data", name)
                 continue
+
+            # Skip if values aren't numeric
+            if not (_is_numeric(input_cost) and _is_numeric(output_cost)):
+                logger.debug("Skipping model %s - invalid cost data", name)
+                continue
+
             # Store with normalized case
             all_costs[name.lower()] = ModelCosts(
-                input_cost_per_token=float(info["input_cost_per_token"]),
-                output_cost_per_token=float(info["output_cost_per_token"]),
+                input_cost_per_token=float(input_cost),
+                output_cost_per_token=float(output_cost),
             )
 
         logger.debug("Extracted costs for %d models", len(all_costs))
 
         # Update cache with all costs
         for model_name, cost_info in all_costs.items():
-            _cost_cache.set(model_name, cost_info, expire=cache_timeout)
+            cost_cache_key = f"{model_name}_costs"
+            _cost_cache.set(cost_cache_key, cost_info, expire=cache_timeout)
         logger.debug("Updated cache with new pricing data")
 
-        # Return costs for requested model
-        if model in all_costs:
-            logger.debug("Found costs for requested model: %s", model)
-            return all_costs[model]
+        # Try finding model with different formats
+        result = all_costs.get(normalized_model)
+        if result is None and ":" in normalized_model:
+            provider, model_name = normalized_model.split(":", 1)
+            # Try base model name
+            result = all_costs.get(model_name)
+            if result is None:
+                # Try provider/model format
+                provider_format = f"{provider}/{model_name}"
+                result = all_costs.get(provider_format)
+
+        # Cache the result for this specific model name
+        if result is not None:
+            _cost_cache.set(cache_key, result, expire=cache_timeout)
     except Exception as e:  # noqa: BLE001
         logger.debug("Failed to get model costs: %s", e)
         return None
     else:
-        logger.debug("No costs found for model: %s", model)
-        return None
+        return result
 
 
 async def calculate_token_cost(
