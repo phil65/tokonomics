@@ -76,13 +76,15 @@ asyncio.run(main())
 You can customize the cache timeout:
 
 ```python
-from tokonomics import get_model_costs
+from tokonomics import get_model_costs, clear_cache
 
 # Get model costs with custom cache duration (e.g., 1 hour)
 costs = await get_model_costs("gpt-4", cache_timeout=3600)
 if costs:
     print(f"Input cost per token: ${costs['input_cost_per_token']}")
     print(f"Output cost per token: ${costs['output_cost_per_token']}")
+
+clear_cache()
 ```
 
 ### Getting Model Token Limits

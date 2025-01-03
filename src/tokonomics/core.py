@@ -27,6 +27,11 @@ _CACHE_TIMEOUT = 86400
 LITELLM_PRICES_URL = "https://raw.githubusercontent.com/BerriAI/litellm/main/model_prices_and_context_window.json"
 
 
+def reset_cache() -> None:
+    """Clear all cached pricing and limit data."""
+    _cost_cache.clear()
+
+
 def _is_numeric(value: str | int | float) -> bool:  # noqa: PYI041
     """Check if a value can be converted to a number."""
     if isinstance(value, int | float):
