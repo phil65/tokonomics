@@ -27,6 +27,20 @@ _CACHE_TIMEOUT = 86400
 LITELLM_PRICES_URL = "https://raw.githubusercontent.com/BerriAI/litellm/main/model_prices_and_context_window.json"
 
 
+def _is_numeric(value: str | int | float) -> bool:  # noqa: PYI041
+    """Check if a value can be converted to a number."""
+    if isinstance(value, int | float):
+        return True
+    if not isinstance(value, str):
+        return False
+    try:
+        float(value)
+    except ValueError:
+        return False
+    else:
+        return True
+
+
 def find_litellm_model_name(model: str) -> str | None:
     """Find matching model name in LiteLLM pricing data.
 
@@ -191,11 +205,9 @@ async def get_model_limits(
     Returns:
         TokenLimits | None: Model's token limits if found, None otherwise
     """
-    # Normalize case for initial lookup
     normalized_model = model.lower()
     cache_key = f"{normalized_model}_limits"
 
-    # Check cache first
     cached_limits = cast(TokenLimits | None, _cost_cache.get(cache_key))
     if cached_limits is not None:
         return cached_limits
@@ -208,19 +220,27 @@ async def get_model_limits(
             data = response.json()
         logger.debug("Successfully downloaded model data")
 
-        # Extract all model limits
         all_limits: dict[str, TokenLimits] = {}
         for name, info in data.items():
             if not isinstance(info, dict):  # Skip sample_spec
                 continue
 
-            # Get the token limits with fallbacks
-            max_tokens = int(info.get("max_tokens", 0))
-            max_input = int(info.get("max_input_tokens", max_tokens))
-            max_output = int(info.get("max_output_tokens", max_tokens))
+            # Check if values are numeric before parsing
+            max_tokens_raw = info.get("max_tokens", 0)
+            max_input_raw = info.get("max_input_tokens", max_tokens_raw)
+            max_output_raw = info.get("max_output_tokens", max_tokens_raw)
+
+            # Skip if values aren't numeric
+            if not all(map(_is_numeric, (max_tokens_raw, max_input_raw, max_output_raw))):
+                logger.debug("Skipping model %s - non-numeric limits", name)
+                continue
+
+            # Now safe to convert to int
+            max_tokens = int(float(max_tokens_raw))
+            max_input = int(float(max_input_raw))
+            max_output = int(float(max_output_raw))
 
             if any((max_tokens, max_input, max_output)):
-                # Store with normalized case
                 all_limits[name.lower()] = TokenLimits(
                     total_tokens=max_tokens,
                     input_tokens=max_input,
@@ -242,7 +262,7 @@ async def get_model_limits(
             logger.debug("Found limits for requested model: %s", model)
             return all_limits[normalized_model]
     except Exception as e:
-        error_msg = "Failed to get model limits"
+        error_msg = f"Failed to get model limits: {e}"
         logger.exception(error_msg)
         raise ValueError(error_msg) from e
     else:
