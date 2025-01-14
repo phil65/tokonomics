@@ -129,12 +129,10 @@ async def get_model_costs(
 
             # Skip if values are missing
             if input_cost is None or output_cost is None:
-                logger.debug("Skipping model %s - missing cost data", name)
                 continue
 
             # Skip if values aren't numeric
             if not (_is_numeric(input_cost) and _is_numeric(output_cost)):
-                logger.debug("Skipping model %s - invalid cost data", name)
                 continue
 
             # Store with normalized case
@@ -261,7 +259,6 @@ async def get_model_limits(
 
             # Skip if values aren't numeric
             if not all(map(_is_numeric, (max_tokens_raw, max_input_raw, max_output_raw))):
-                logger.debug("Skipping model %s - non-numeric limits", name)
                 continue
 
             # Now safe to convert to int
