@@ -293,3 +293,45 @@ async def get_model_limits(
         raise ValueError(error_msg) from e
     else:
         return None
+
+
+async def get_available_models(
+    *,
+    cache_timeout: int = _CACHE_TIMEOUT,
+) -> list[str]:
+    """Get a list of all available model names from LiteLLM pricing data.
+
+    Args:
+        cache_timeout: Number of seconds to keep data in cache (default: 24 hours)
+
+    Returns:
+        list[str]: List of available model names, sorted alphabetically
+    """
+    cache_key = "available_models"
+
+    cached_models = cast(list[str] | None, _cost_cache.get(cache_key))
+    if cached_models is not None:
+        return cached_models
+
+    try:
+        logger.debug("Downloading model data from LiteLLM...")
+        async with httpx.AsyncClient() as client:
+            response = await client.get(LITELLM_PRICES_URL)
+            response.raise_for_status()
+            data = response.json()
+
+        # Filter out non-dictionary entries (like sample_spec) and collect model names
+        model_names = sorted(
+            name.lower() for name, info in data.items() if isinstance(info, dict)
+        )
+
+        logger.debug("Found %d available models", len(model_names))
+
+        # Cache the results
+        _cost_cache.set(cache_key, model_names, expire=cache_timeout)
+    except Exception as e:
+        error_msg = "Failed to get available models"
+        logger.exception(error_msg)
+        raise ValueError(error_msg) from e
+    else:
+        return model_names

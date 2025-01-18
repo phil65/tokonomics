@@ -4,6 +4,7 @@ from tokonomics.core import (
     get_model_costs,
     calculate_token_cost,
     get_model_limits,
+    get_available_models,
     reset_cache,
 )
 from tokonomics.toko_types import ModelCosts, TokenCosts, TokenLimits
@@ -17,6 +18,7 @@ __all__ = [
     "Usage",
     "calculate_pydantic_cost",
     "calculate_token_cost",
+    "get_available_models",
     "get_model_costs",
     "get_model_limits",
     "reset_cache",
