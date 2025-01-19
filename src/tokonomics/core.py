@@ -10,7 +10,7 @@ import diskcache
 import httpx
 from platformdirs import user_data_dir
 
-from tokonomics.toko_types import ModelCosts, TokenCosts, TokenLimits
+from tokonomics.toko_types import ModelCapabilities, ModelCosts, TokenCosts, TokenLimits
 
 
 logger = logging.getLogger(__name__)
@@ -335,3 +335,107 @@ async def get_available_models(
         raise ValueError(error_msg) from e
     else:
         return model_names
+
+
+async def get_model_capabilities(
+    model: str,
+    *,
+    cache_timeout: int = _CACHE_TIMEOUT,
+) -> ModelCapabilities | None:
+    """Get capabilities information for a model from LiteLLM data.
+
+    Args:
+        model: Name of the model to look up capabilities for
+        cache_timeout: Number of seconds to keep data in cache (default: 24 hours)
+
+    Returns:
+        ModelCapabilities | None: Model's capabilities if found, None otherwise
+
+    Raises:
+        ValueError: If there's an error fetching the capabilities data
+    """
+    normalized_model = model.lower()
+    cache_key = f"{normalized_model}_capabilities"
+
+    cached_capabilities = cast(ModelCapabilities | None, _cost_cache.get(cache_key))
+    if cached_capabilities is not None:
+        return cached_capabilities
+
+    try:
+        logger.debug("Downloading model data from LiteLLM...")
+        async with httpx.AsyncClient() as client:
+            response = await client.get(LITELLM_PRICES_URL)
+            response.raise_for_status()
+            data = response.json()
+        logger.debug("Successfully downloaded model data")
+
+        all_capabilities: dict[str, ModelCapabilities] = {}
+        for name, info in data.items():
+            if not isinstance(info, dict):
+                continue
+
+            # Handle token limits with defaults
+            max_tokens_raw = info.get("max_tokens", 0)
+            max_input_raw = info.get("max_input_tokens", max_tokens_raw)
+            max_output_raw = info.get("max_output_tokens", max_tokens_raw)
+
+            # Convert token values to integers, defaulting to 0
+            try:
+                max_tokens = (
+                    int(float(max_tokens_raw)) if _is_numeric(max_tokens_raw) else 0
+                )
+                max_input = int(float(max_input_raw)) if _is_numeric(max_input_raw) else 0
+                max_output = (
+                    int(float(max_output_raw)) if _is_numeric(max_output_raw) else 0
+                )
+            except (ValueError, TypeError):
+                max_tokens = max_input = max_output = 0
+
+            capabilities = ModelCapabilities(
+                max_tokens=max_tokens,
+                max_input_tokens=max_input,
+                max_output_tokens=max_output,
+                litellm_provider=info.get("litellm_provider"),
+                mode=info.get("mode"),
+                supports_function_calling=bool(info.get("supports_function_calling")),
+                supports_parallel_function_calling=bool(
+                    info.get("supports_parallel_function_calling")
+                ),
+                supports_vision=bool(info.get("supports_vision")),
+                supports_audio_input=bool(info.get("supports_audio_input")),
+                supports_audio_output=bool(info.get("supports_audio_output")),
+                supports_prompt_caching=bool(info.get("supports_prompt_caching")),
+                supports_response_schema=bool(info.get("supports_response_schema")),
+                supports_system_messages=bool(info.get("supports_system_messages")),
+            )
+            all_capabilities[name.lower()] = capabilities
+
+        logger.debug("Extracted capabilities for %d models", len(all_capabilities))
+
+        # Update cache with all capabilities
+        for model_name, model_capabilities in all_capabilities.items():
+            cap_cache_key = f"{model_name}_capabilities"
+            _cost_cache.set(cap_cache_key, model_capabilities, expire=cache_timeout)
+        logger.debug("Updated cache with new capabilities data")
+
+        # Try finding model with different formats
+        result = all_capabilities.get(normalized_model)
+        if result is None and ":" in normalized_model:
+            provider, model_name = normalized_model.split(":", 1)
+            # Try base model name
+            result = all_capabilities.get(model_name)
+            if result is None:
+                # Try provider/model format
+                provider_format = f"{provider}/{model_name}"
+                result = all_capabilities.get(provider_format)
+
+        if result is not None:
+            _cost_cache.set(cache_key, result, expire=cache_timeout)
+            return result
+
+    except Exception as e:
+        error_msg = f"Failed to get model capabilities: {e}"
+        logger.exception(error_msg)
+        raise ValueError(error_msg) from e
+
+    return None
