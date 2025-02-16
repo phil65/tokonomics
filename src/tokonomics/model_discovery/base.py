@@ -27,6 +27,41 @@ class ModelInfo:
     context_window: int | None = None
     is_deprecated: bool = False
 
+    def format(self) -> str:
+        """Format model information as a human-readable string.
+
+        Returns:
+            str: Formatted model information
+        """
+        lines: list[str] = []
+
+        # Basic info
+        lines.append(f"Model: {self.name}")
+        lines.append(f"Provider: {self.provider}")
+        lines.append(f"ID: {self.id}")
+
+        # Optional fields
+        if self.owned_by:
+            lines.append(f"Owned by: {self.owned_by}")
+
+        if self.context_window:
+            lines.append(f"Context window: {self.context_window:,} tokens")
+
+        if self.pricing:
+            if self.pricing.prompt is not None:
+                lines.append(f"Prompt cost: ${self.pricing.prompt:.6f}/token")
+            if self.pricing.completion is not None:
+                lines.append(f"Completion cost: ${self.pricing.completion:.6f}/token")
+
+        if self.description:
+            lines.append("\nDescription:")
+            lines.append(self.description)
+
+        if self.is_deprecated:
+            lines.append("\n⚠️ This model is deprecated")
+
+        return "\n".join(lines)
+
 
 class ModelProvider(ABC):
     """Base class for model providers."""
