@@ -10,10 +10,28 @@ from tokonomics.core import (
 )
 from tokonomics.toko_types import ModelCosts, TokenCosts, TokenLimits
 from tokonomics.pydanticai_cost import calculate_pydantic_cost, Usage
+from tokonomics.model_discovery import (
+    AnthropicProvider,
+    MistralProvider,
+    OpenRouterProvider,
+    OpenAIProvider,
+    GroqProvider,
+    ModelInfo,
+    ModelPricing,
+    ModelProvider,
+)
 
 
 __all__ = [
+    "AnthropicProvider",
+    "GroqProvider",
+    "MistralProvider",
     "ModelCosts",
+    "ModelInfo",
+    "ModelPricing",
+    "ModelProvider",
+    "OpenAIProvider",
+    "OpenRouterProvider",
     "TokenCosts",
     "TokenLimits",
     "Usage",
