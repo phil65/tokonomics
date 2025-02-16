@@ -19,6 +19,7 @@ from tokonomics.model_discovery import (
     ModelInfo,
     ModelPricing,
     ModelProvider,
+    get_all_models,
 )
 
 
@@ -37,6 +38,7 @@ __all__ = [
     "Usage",
     "calculate_pydantic_cost",
     "calculate_token_cost",
+    "get_all_models",
     "get_available_models",
     "get_model_capabilities",
     "get_model_costs",
