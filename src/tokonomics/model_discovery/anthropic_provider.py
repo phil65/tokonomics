@@ -9,6 +9,7 @@ from typing import Any
 import httpx
 
 from tokonomics.model_discovery.base import ModelInfo, ModelProvider
+from tokonomics.utils import make_request
 
 
 class AnthropicProvider(ModelProvider):
@@ -48,12 +49,10 @@ class AnthropicProvider(ModelProvider):
         headers = {"x-api-key": self.api_key, "anthropic-version": self.version}
 
         try:
-            async with self.client as client:
-                response = await client.get(url, params=params, headers=headers)
-                response.raise_for_status()
-
-                data = response.json()
-                return [self._parse_model(item) for item in data.get("data", [])]
+            response = await make_request(url, params=params, headers=headers)
+            response.raise_for_status()
+            data = response.json()
+            return [self._parse_model(item) for item in data.get("data", [])]
 
         except httpx.HTTPError as e:
             msg = f"Failed to fetch models from Anthropic: {e}"

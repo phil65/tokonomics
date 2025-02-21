@@ -6,10 +6,6 @@ from abc import ABC, abstractmethod
 from dataclasses import dataclass
 import logging
 import pathlib
-from typing import ClassVar
-
-import hishel
-import httpx
 
 
 logger = logging.getLogger(__name__)
@@ -78,32 +74,6 @@ class ModelInfo:
 
 class ModelProvider(ABC):
     """Base class for model providers."""
-
-    # Cache TTL in seconds (24 hours)
-    CACHE_TTL: ClassVar[int] = 86400
-
-    def __init__(self) -> None:
-        """Initialize the provider with caching support."""
-        # Set up filesystem cache storage
-        storage = hishel.AsyncFileStorage(base_path=CACHE_DIR, ttl=self.CACHE_TTL)
-
-        # Configure caching behavior
-        controller = hishel.Controller(
-            cacheable_methods=["GET"],
-            cacheable_status_codes=[200],
-            allow_stale=True,
-        )
-
-        # Create cached transport
-        base_transport = httpx.AsyncHTTPTransport()
-        transport = hishel.AsyncCacheTransport(
-            transport=base_transport,
-            storage=storage,
-            controller=controller,
-        )
-
-        # Create cached client
-        self.client = httpx.AsyncClient(transport=transport)  # type: ignore[arg-type]
 
     @abstractmethod
     async def get_models(self) -> list[ModelInfo]:
