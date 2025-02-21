@@ -142,13 +142,12 @@ Names are matched case-insensitively.
 
 ## Data Source
 
-Pricing data is sourced from [LiteLLM's pricing repository](https://github.com/BerriAI/litellm) and is automatically cached locally using `diskcache`. The cache is updated when pricing data is not found or has expired.
+Pricing data is sourced from [LiteLLM's pricing repository](https://github.com/BerriAI/litellm) and is automatically cached locally using `hishel`. The cache is updated when pricing data is not found or has expired.
 
 ## Requirements
 
 - Python 3.12+
 - `httpx`
-- `diskcache`
 - `platformdirs`
 - `upath`
 - `pydantic` (≥ 2.0)

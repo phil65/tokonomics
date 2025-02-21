@@ -2,10 +2,6 @@
 
 from __future__ import annotations
 
-from pathlib import Path
-import shutil
-
-import diskcache
 import httpx
 import pytest
 import respx
@@ -29,32 +25,24 @@ SAMPLE_PRICING_DATA = {
     },
 }
 
-# Use a test-specific cache directory
-TEST_CACHE_DIR = Path("~/.cache/tokonomics/test_pricing").expanduser()
-
 
 @pytest.fixture(autouse=True)
 def setup_teardown():
     """Setup and teardown for each test."""
-    # Setup: ensure clean cache directory
     import tokonomics.core
+    import tokonomics.utils
 
-    if hasattr(tokonomics.core, "_cost_cache"):
-        tokonomics.core._cost_cache.close()
+    # Disable caching during tests
+    tokonomics.utils._TESTING = True
 
-    if TEST_CACHE_DIR.exists():
-        shutil.rmtree(str(TEST_CACHE_DIR))
-    TEST_CACHE_DIR.mkdir(parents=True, exist_ok=True)
-
-    # Point the cache to our test directory
-    tokonomics.core._cost_cache = diskcache.Cache(str(TEST_CACHE_DIR))
+    # Clear in-memory cache
+    tokonomics.core._cost_cache.clear()
 
     yield
 
-    # Teardown: clean up
-    tokonomics.core._cost_cache.close()
-    if TEST_CACHE_DIR.exists():
-        shutil.rmtree(str(TEST_CACHE_DIR))
+    # Reset after test
+    tokonomics.utils._TESTING = False
+    tokonomics.core._cost_cache.clear()
 
 
 @pytest.fixture

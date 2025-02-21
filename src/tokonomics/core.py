@@ -6,11 +6,10 @@ import logging
 import pathlib
 from typing import cast
 
-import diskcache
-import httpx
 from platformdirs import user_data_dir
 
 from tokonomics.toko_types import ModelCapabilities, ModelCosts, TokenCosts, TokenLimits
+from tokonomics.utils import make_request
 
 
 logger = logging.getLogger(__name__)
@@ -19,7 +18,7 @@ logger = logging.getLogger(__name__)
 # Cache cost data persistently
 PRICING_DIR = pathlib.Path(user_data_dir("tokonomics", "tokonomics")) / "pricing"
 PRICING_DIR.mkdir(parents=True, exist_ok=True)
-_cost_cache = diskcache.Cache(directory=str(PRICING_DIR))
+_cost_cache: dict[str, object] = {}
 
 # Cache timeout in seconds (24 hours)
 _CACHE_TIMEOUT = 86400
@@ -73,12 +72,12 @@ def find_litellm_model_name(model: str) -> str | None:
         provider, model_name = model.split(":", 1)
         # Try just model name (normalized)
         model_name = model_name.lower()
-        if _cost_cache.get(model_name, None) is not None:
+        if _cost_cache.get(model_name) is not None:
             logger.debug("Found cache match for base name: %s", model_name)
             return model_name
         # Try provider/model format (normalized)
         provider_format = f"{provider.lower()}/{model_name}"
-        if _cost_cache.get(provider_format, None) is not None:
+        if _cost_cache.get(provider_format) is not None:
             logger.debug("Found cache match for provider format: %s", provider_format)
             return provider_format
 
@@ -112,10 +111,9 @@ async def get_model_costs(
 
     try:
         logger.debug("Downloading pricing data from LiteLLM...")
-        async with httpx.AsyncClient() as client:
-            response = await client.get(LITELLM_PRICES_URL)
-            response.raise_for_status()
-            data = response.json()
+        response = await make_request(LITELLM_PRICES_URL)
+        response.raise_for_status()
+        data = response.json()
         logger.debug("Successfully downloaded pricing data")
 
         all_costs: dict[str, ModelCosts] = {}
@@ -146,7 +144,7 @@ async def get_model_costs(
         # Update cache with all costs
         for model_name, cost_info in all_costs.items():
             cost_cache_key = f"{model_name}_costs"
-            _cost_cache.set(cost_cache_key, cost_info, expire=cache_timeout)
+            _cost_cache[cost_cache_key] = cost_info
         logger.debug("Updated cache with new pricing data")
 
         # Try finding model with different formats
@@ -162,7 +160,7 @@ async def get_model_costs(
 
         # Cache the result for this specific model name
         if result is not None:
-            _cost_cache.set(cache_key, result, expire=cache_timeout)
+            _cost_cache[cache_key] = result
     except Exception as e:  # noqa: BLE001
         logger.debug("Failed to get model costs: %s", e)
         return None
@@ -241,10 +239,9 @@ async def get_model_limits(
 
     try:
         logger.debug("Downloading model data from LiteLLM...")
-        async with httpx.AsyncClient() as client:
-            response = await client.get(LITELLM_PRICES_URL)
-            response.raise_for_status()
-            data = response.json()
+        response = await make_request(LITELLM_PRICES_URL)
+        response.raise_for_status()
+        data = response.json()
         logger.debug("Successfully downloaded model data")
 
         all_limits: dict[str, TokenLimits] = {}
@@ -278,9 +275,9 @@ async def get_model_limits(
         # Update cache with all limits
         for model_name, limit_info in all_limits.items():
             limit_cache_key = f"{model_name}_limits"
-            _cost_cache.set(limit_cache_key, limit_info, expire=cache_timeout)
+            _cost_cache[limit_cache_key] = limit_info
             # Also cache the model name for find_litellm_model_name
-            _cost_cache.set(model_name, {}, expire=cache_timeout)
+            _cost_cache[model_name] = {}
         logger.debug("Updated cache with new limit data")
 
         # Return limits for requested model
@@ -315,10 +312,9 @@ async def get_available_models(
 
     try:
         logger.debug("Downloading model data from LiteLLM...")
-        async with httpx.AsyncClient() as client:
-            response = await client.get(LITELLM_PRICES_URL)
-            response.raise_for_status()
-            data = response.json()
+        response = await make_request(LITELLM_PRICES_URL)
+        response.raise_for_status()
+        data = response.json()
 
         # Filter out non-dictionary entries (like sample_spec) and collect model names
         model_names = sorted(
@@ -328,7 +324,7 @@ async def get_available_models(
         logger.debug("Found %d available models", len(model_names))
 
         # Cache the results
-        _cost_cache.set(cache_key, model_names, expire=cache_timeout)
+        _cost_cache[cache_key] = model_names
     except Exception as e:
         error_msg = "Failed to get available models"
         logger.exception(error_msg)
@@ -363,10 +359,9 @@ async def get_model_capabilities(
 
     try:
         logger.debug("Downloading model data from LiteLLM...")
-        async with httpx.AsyncClient() as client:
-            response = await client.get(LITELLM_PRICES_URL)
-            response.raise_for_status()
-            data = response.json()
+        response = await make_request(LITELLM_PRICES_URL)
+        response.raise_for_status()
+        data = response.json()
         logger.debug("Successfully downloaded model data")
 
         all_capabilities: dict[str, ModelCapabilities] = {}
@@ -415,7 +410,7 @@ async def get_model_capabilities(
         # Update cache with all capabilities
         for model_name, model_capabilities in all_capabilities.items():
             cap_cache_key = f"{model_name}_capabilities"
-            _cost_cache.set(cap_cache_key, model_capabilities, expire=cache_timeout)
+            _cost_cache[cap_cache_key] = model_capabilities
         logger.debug("Updated cache with new capabilities data")
 
         # Try finding model with different formats
@@ -430,7 +425,7 @@ async def get_model_capabilities(
                 result = all_capabilities.get(provider_format)
 
         if result is not None:
-            _cost_cache.set(cache_key, result, expire=cache_timeout)
+            _cost_cache[cache_key] = result
             return result
 
     except Exception as e:
