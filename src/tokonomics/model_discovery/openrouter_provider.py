@@ -15,6 +15,7 @@ class OpenRouterProvider(ModelProvider):
     """OpenRouter API provider."""
 
     def __init__(self, api_key: str | None = None):
+        super().__init__()
         self.api_key = api_key or os.environ.get("OPENROUTER_API_KEY")
         self.base_url = "https://openrouter.ai/api/v1"
 
@@ -41,7 +42,7 @@ class OpenRouterProvider(ModelProvider):
             if self.api_key:
                 headers["Authorization"] = f"Bearer {self.api_key}"
 
-            async with httpx.AsyncClient() as client:
+            async with self.client as client:
                 response = await client.get(url, headers=headers)
                 response.raise_for_status()
 
@@ -61,3 +62,12 @@ class OpenRouterProvider(ModelProvider):
         except (KeyError, ValueError) as e:
             msg = f"Invalid data in OpenRouter response: {e}"
             raise RuntimeError(msg) from e
+
+
+if __name__ == "__main__":
+    import asyncio
+
+    provider = OpenRouterProvider(api_key="your_api_key")
+    models = asyncio.run(provider.get_models())
+    for model in models:
+        print(model.format())

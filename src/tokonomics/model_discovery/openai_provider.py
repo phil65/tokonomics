@@ -15,6 +15,7 @@ class OpenAIProvider(ModelProvider):
     """OpenAI API provider."""
 
     def __init__(self, api_key: str | None = None):
+        super().__init__()
         self.api_key = api_key or os.environ.get("OPENAI_API_KEY")
         if not self.api_key:
             msg = "OpenAI API key not found in parameters or OPENAI_API_KEY env var"
@@ -40,7 +41,7 @@ class OpenAIProvider(ModelProvider):
 
         try:
             headers = {"Authorization": f"Bearer {self.api_key}"}
-            async with httpx.AsyncClient() as client:
+            async with self.client as client:
                 response = await client.get(url, headers=headers)
                 response.raise_for_status()
 

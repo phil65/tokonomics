@@ -19,6 +19,7 @@ class AnthropicProvider(ModelProvider):
         api_key: str | None = None,
         version: str = "2023-06-01",
     ):
+        super().__init__()
         api_key = api_key or os.environ.get("ANTHROPIC_API_KEY")
         assert api_key, "API key not found"
         self.api_key = api_key
@@ -47,7 +48,7 @@ class AnthropicProvider(ModelProvider):
         headers = {"x-api-key": self.api_key, "anthropic-version": self.version}
 
         try:
-            async with httpx.AsyncClient() as client:
+            async with self.client as client:
                 response = await client.get(url, params=params, headers=headers)
                 response.raise_for_status()
 
@@ -63,3 +64,12 @@ class AnthropicProvider(ModelProvider):
         except (KeyError, ValueError) as e:
             msg = f"Invalid data in Anthropic response: {e}"
             raise RuntimeError(msg) from e
+
+
+if __name__ == "__main__":
+    import asyncio
+
+    provider = AnthropicProvider()
+    models = asyncio.run(provider.get_models())
+    for model in models:
+        print(model)
