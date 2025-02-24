@@ -9,7 +9,7 @@ from typing import cast
 from platformdirs import user_data_dir
 
 from tokonomics.toko_types import ModelCapabilities, ModelCosts, TokenCosts, TokenLimits
-from tokonomics.utils import make_request
+from tokonomics.utils import download_json
 
 
 logger = logging.getLogger(__name__)
@@ -23,7 +23,7 @@ _cost_cache: dict[str, object] = {}
 # Cache timeout in seconds (24 hours)
 _CACHE_TIMEOUT = 86400
 
-LITELLM_PRICES_URL = "https://raw.githubusercontent.com/BerriAI/litellm/main/model_prices_and_context_window.json"
+LITELLM_PRICES_URL = "https://raw.githubusercontent.com/BerriAI/litellm/refs/heads/main/model_prices_and_context_window.json"
 
 
 def reset_cache() -> None:
@@ -111,9 +111,8 @@ async def get_model_costs(
 
     try:
         logger.debug("Downloading pricing data from LiteLLM...")
-        response = await make_request(LITELLM_PRICES_URL)
-        response.raise_for_status()
-        data = response.json()
+        data = await download_json(LITELLM_PRICES_URL)
+        assert isinstance(data, dict), f"Expected dict, got {type(data)}"
         logger.debug("Successfully downloaded pricing data")
 
         all_costs: dict[str, ModelCosts] = {}
@@ -239,9 +238,8 @@ async def get_model_limits(
 
     try:
         logger.debug("Downloading model data from LiteLLM...")
-        response = await make_request(LITELLM_PRICES_URL)
-        response.raise_for_status()
-        data = response.json()
+        data = await download_json(LITELLM_PRICES_URL)
+        assert isinstance(data, dict), f"Expected dict, got {type(data)}"
         logger.debug("Successfully downloaded model data")
 
         all_limits: dict[str, TokenLimits] = {}
@@ -312,10 +310,8 @@ async def get_available_models(
 
     try:
         logger.debug("Downloading model data from LiteLLM...")
-        response = await make_request(LITELLM_PRICES_URL)
-        response.raise_for_status()
-        data = response.json()
-
+        data = await download_json(LITELLM_PRICES_URL)
+        assert isinstance(data, dict), f"Expected dict, got {type(data)}"
         # Filter out non-dictionary entries (like sample_spec) and collect model names
         model_names = sorted(
             name.lower() for name, info in data.items() if isinstance(info, dict)
@@ -359,9 +355,8 @@ async def get_model_capabilities(
 
     try:
         logger.debug("Downloading model data from LiteLLM...")
-        response = await make_request(LITELLM_PRICES_URL)
-        response.raise_for_status()
-        data = response.json()
+        data = await download_json(LITELLM_PRICES_URL)
+        assert isinstance(data, dict), f"Expected dict, got {type(data)}"
         logger.debug("Successfully downloaded model data")
 
         all_capabilities: dict[str, ModelCapabilities] = {}

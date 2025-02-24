@@ -69,17 +69,11 @@ async def download_json(
     try:
         response = await make_request(url, params=params, headers=headers)
         response.raise_for_status()
-
-        # Try to parse the response
-        try:
-            return parse_json(response.content)
-        except (json.JSONDecodeError, ValueError) as e:
-            msg = f"Invalid JSON response from {url}: {e}"
-            logger.exception(msg)
-            # Log a snippet of the response for debugging
-            content_preview = response.text[:200]
-            logger.debug("Response preview: %s...", content_preview)
-            raise DownloadError(msg) from e
+    except (json.JSONDecodeError, ValueError) as e:
+        msg = f"Invalid JSON response from {url}: {e}"
+        logger.exception(msg)
+        # Log a snippet of the response for debugging
+        raise DownloadError(msg) from e
 
     except httpx.TimeoutException as e:
         msg = f"Timeout while downloading from {url}"
@@ -88,6 +82,16 @@ async def download_json(
     except httpx.HTTPError as e:
         msg = f"HTTP error while downloading from {url}: {e}"
         logger.exception(msg)
+        raise DownloadError(msg) from e
+
+    try:
+        return parse_json(response.content)
+    except (json.JSONDecodeError, ValueError) as e:
+        msg = f"Invalid JSON response from {url}: {e}"
+        logger.exception(msg)
+        # Log a snippet of the response for debugging
+        content_preview = response.text[:200]
+        logger.debug("Response preview: %s...", content_preview)
         raise DownloadError(msg) from e
 
 
@@ -100,16 +104,21 @@ async def make_request(
     import hishel
     import httpx
 
+    # Add standard headers if none provided
+    if headers is None:
+        headers = {
+            b"User-Agent": b"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36",  # noqa: E501
+            b"Accept": b"application/json,*/*",
+        }
+
     if _TESTING:
         async with httpx.AsyncClient() as client:
-            return await client.get(url)
+            return await client.get(url, params=params, headers=headers)
 
-    # In production, use hishel caching
     storage = hishel.AsyncFileStorage(
         base_path=CACHE_DIR,
         ttl=_CACHE_TIMEOUT,
     )
-
     controller = hishel.Controller(
         cacheable_methods=["GET"],
         cacheable_status_codes=[200],
@@ -121,11 +130,6 @@ async def make_request(
         controller=controller,
     )
     async with httpx.AsyncClient(transport=transport) as client:  # type: ignore[arg-type]
-        response = await client.get(url, params=params, headers=headers)
-        logger.debug(
-            "Response from %s - Status: %d, Content-Length: %s",
-            url,
-            response.status_code,
-            response.headers.get("content-length"),
+        return await client.get(
+            url, params=params, headers=headers, follow_redirects=True
         )
-        return response

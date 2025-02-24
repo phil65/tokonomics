@@ -2,6 +2,9 @@
 
 from __future__ import annotations
 
+import json
+from typing import Any
+
 from httpx import AsyncClient
 import pytest
 
@@ -118,15 +121,15 @@ async def test_get_model_costs_handles_non_numeric_values(
 
 
 class MockResponse:
-    """Mock httpx response."""
+    def __init__(self, data: Any) -> None:
+        self.data = data
+        self._content = json.dumps(data).encode()
+        self.status_code = 200  # Needed by hishel
+        self.content = self._content  # Needed by download_json
+        self.headers = {"content-length": str(len(self._content))}
 
-    def __init__(self, json_data: dict[str, object]) -> None:
-        """Initialize with JSON data."""
-        self.json_data = json_data
-
-    def json(self) -> dict[str, object]:
-        """Return JSON data."""
-        return self.json_data
+    def json(self) -> Any:
+        return self.data
 
     def raise_for_status(self) -> None:
-        """Do nothing for successful response."""
+        pass

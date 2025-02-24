@@ -6,7 +6,7 @@ import httpx
 import pytest
 import respx
 
-from tokonomics import calculate_token_cost, get_model_costs
+from tokonomics import calculate_token_cost, core, get_model_costs
 from tokonomics.core import get_model_limits
 
 
@@ -49,10 +49,7 @@ def setup_teardown():
 def mock_litellm_api():
     """Mock LiteLLM API responses."""
     with respx.mock(assert_all_mocked=True) as respx_mock:
-        route = respx_mock.get(
-            "https://raw.githubusercontent.com/BerriAI/litellm/main/"
-            "model_prices_and_context_window.json"
-        )
+        route = respx_mock.get(core.LITELLM_PRICES_URL)
         route.mock(return_value=httpx.Response(200, json=SAMPLE_PRICING_DATA))
         yield respx_mock
 
@@ -140,10 +137,7 @@ async def test_calculate_token_cost_unknown_model(mock_litellm_api):
 @pytest.mark.asyncio
 async def test_api_error(mock_litellm_api):
     """Test behavior when API request fails."""
-    mock_litellm_api.get(
-        "https://raw.githubusercontent.com/BerriAI/litellm/main/"
-        "model_prices_and_context_window.json"
-    ).mock(return_value=httpx.Response(500))
+    mock_litellm_api.get(core.LITELLM_PRICES_URL).mock(return_value=httpx.Response(500))
     costs = await get_model_costs("gpt-4", cache_timeout=1)
     assert costs is None
 
