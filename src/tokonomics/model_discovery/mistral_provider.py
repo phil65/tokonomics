@@ -5,7 +5,8 @@ from __future__ import annotations
 import os
 from typing import Any
 
-from tokonomics.model_discovery.base import ModelInfo, ModelProvider
+from tokonomics.model_discovery.base import ModelProvider
+from tokonomics.model_discovery.model_info import ModelInfo
 
 
 class MistralProvider(ModelProvider):

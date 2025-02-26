@@ -11,7 +11,8 @@ from tokonomics.model_discovery.openai_provider import OpenAIProvider
 from tokonomics.model_discovery.groq_provider import GroqProvider
 from tokonomics.model_discovery.mistral_provider import MistralProvider
 from tokonomics.model_discovery.openrouter_provider import OpenRouterProvider
-from tokonomics.model_discovery.base import ModelInfo, ModelPricing, ModelProvider
+from tokonomics.model_discovery.base import ModelProvider
+from tokonomics.model_discovery.model_info import ModelPricing, ModelInfo
 
 if TYPE_CHECKING:
     from collections.abc import Sequence
