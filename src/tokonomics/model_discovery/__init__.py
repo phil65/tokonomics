@@ -14,6 +14,7 @@ from tokonomics.model_discovery.openrouter_provider import OpenRouterProvider
 from tokonomics.model_discovery.base import ModelProvider
 from tokonomics.model_discovery.model_info import ModelPricing, ModelInfo
 
+
 if TYPE_CHECKING:
     from collections.abc import Sequence
 
@@ -43,6 +44,7 @@ def get_all_models_sync(
     *,
     providers: Sequence[ProviderType] | None = None,
     max_workers: int | None = None,
+    include_deprecated: bool = False,
 ) -> list[ModelInfo]:
     """Fetch models from selected providers in parallel using threads.
 
@@ -50,6 +52,7 @@ def get_all_models_sync(
         providers: Sequence of provider names to use. Defaults to all providers.
         max_workers: Maximum number of worker threads.
                      Defaults to min(32, os.cpu_count() * 5)
+        include_deprecated: Whether to include deprecated models. Defaults to False.
 
     Returns:
         list[ModelInfo]: Combined list of models from all providers.
@@ -63,10 +66,14 @@ def get_all_models_sync(
         """Fetch models from a single provider."""
         try:
             provider = _PROVIDER_MAP[provider_name]()
-            return provider.get_models_sync()
+            models = provider.get_models_sync()
+            if not include_deprecated:
+                models = [model for model in models if not model.is_deprecated]
         except Exception as e:  # noqa: BLE001
             logger.warning("Failed to fetch models from %s: %s", provider_name, str(e))
             return None
+        else:
+            return models
 
     # Use ThreadPoolExecutor for parallel execution
     with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
@@ -88,11 +95,13 @@ def get_all_models_sync(
 async def get_all_models(
     *,
     providers: Sequence[ProviderType] | None = None,
+    include_deprecated: bool = False,
 ) -> list[ModelInfo]:
     """Fetch models from selected providers in parallel.
 
     Args:
         providers: Sequence of provider names to use. Defaults to all providers.
+        include_deprecated: Whether to include deprecated models. Defaults to False.
 
     Returns:
         list[ModelInfo]: Combined list of models from all providers.
@@ -106,10 +115,14 @@ async def get_all_models(
         """Fetch models from a single provider."""
         try:
             provider = _PROVIDER_MAP[provider_name]()
-            return await provider.get_models()
+            models = await provider.get_models()
+            if not include_deprecated:
+                models = [model for model in models if not model.is_deprecated]
         except Exception as e:  # noqa: BLE001
             logger.warning("Failed to fetch models from %s: %s", provider_name, str(e))
             return None
+        else:
+            return models
 
     # Fetch models from all providers in parallel
     results = await asyncio.gather(
