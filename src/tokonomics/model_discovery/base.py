@@ -87,22 +87,24 @@ class ModelProvider(ABC):
 
     def get_models_sync(self) -> list[ModelInfo]:
         """Fetch available models from the provider synchronously."""
-        url = f"{self.base_url}/models"
         import json
 
         import httpx
 
+        from tokonomics.utils import make_request_sync
+
+        url = f"{self.base_url}/models"
+
         try:
-            with httpx.Client() as client:
-                response = client.get(url, headers=self.headers, params=self.params)
-                response.raise_for_status()
+            response = make_request_sync(url, headers=self.headers, params=self.params)
+            response.raise_for_status()
 
-                data = response.json()
-                if not isinstance(data, dict) or "data" not in data:
-                    msg = f"Invalid response format from {self.__class__.__name__}"
-                    raise RuntimeError(msg)
+            data = response.json()
+            if not isinstance(data, dict) or "data" not in data:
+                msg = f"Invalid response format from {self.__class__.__name__}"
+                raise RuntimeError(msg)
 
-                return [self._parse_model(item) for item in data["data"]]
+            return [self._parse_model(item) for item in data["data"]]
 
         except httpx.HTTPError as e:
             msg = f"Failed to fetch models from {self.__class__.__name__}: {e}"
@@ -116,22 +118,24 @@ class ModelProvider(ABC):
 
     async def get_models(self) -> list[ModelInfo]:
         """Fetch available models from the provider asynchronously."""
-        url = f"{self.base_url}/models"
         import json
 
         import httpx
 
+        from tokonomics.utils import make_request
+
+        url = f"{self.base_url}/models"
+
         try:
-            async with httpx.AsyncClient() as client:
-                response = await client.get(url, headers=self.headers, params=self.params)
-                response.raise_for_status()
+            response = await make_request(url, headers=self.headers, params=self.params)
+            response.raise_for_status()
 
-                data = response.json()
-                if not isinstance(data, dict) or "data" not in data:
-                    msg = f"Invalid response format from {self.__class__.__name__}"
-                    raise RuntimeError(msg)
+            data = response.json()
+            if not isinstance(data, dict) or "data" not in data:
+                msg = f"Invalid response format from {self.__class__.__name__}"
+                raise RuntimeError(msg)
 
-                return [self._parse_model(item) for item in data["data"]]
+            return [self._parse_model(item) for item in data["data"]]
 
         except httpx.HTTPError as e:
             msg = f"Failed to fetch models from {self.__class__.__name__}: {e}"

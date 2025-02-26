@@ -133,3 +133,30 @@ async def make_request(
         return await client.get(
             url, params=params, headers=headers, follow_redirects=True
         )
+
+
+def make_request_sync(
+    url: str,
+    params: dict[str, Any] | None = None,
+    headers: dict[str, str] | None = None,
+) -> httpx.Response:
+    """Make a synchronous HTTP request with caching."""
+    import hishel
+    import httpx
+
+    storage = hishel.FileStorage(
+        base_path=CACHE_DIR,
+        ttl=86400,  # 24 hours
+    )
+    controller = hishel.Controller(
+        cacheable_methods=["GET"],
+        cacheable_status_codes=[200],
+        allow_stale=True,
+    )
+    transport = hishel.CacheTransport(
+        transport=httpx.HTTPTransport(),
+        storage=storage,
+        controller=controller,
+    )
+    with httpx.Client(transport=transport) as client:  # type: ignore[arg-type]
+        return client.get(url, params=params, headers=headers, follow_redirects=True)
