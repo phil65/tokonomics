@@ -38,6 +38,52 @@ _PROVIDER_MAP: dict[ProviderType, type[ModelProvider]] = {
 }
 
 
+def get_all_models_sync(
+    *,
+    providers: Sequence[ProviderType] | None = None,
+    max_workers: int | None = None,
+) -> list[ModelInfo]:
+    """Fetch models from selected providers in parallel using threads.
+
+    Args:
+        providers: Sequence of provider names to use. Defaults to all providers.
+        max_workers: Maximum number of worker threads.
+                     Defaults to min(32, os.cpu_count() * 5)
+
+    Returns:
+        list[ModelInfo]: Combined list of models from all providers.
+    """
+    import concurrent.futures
+
+    selected_providers = providers or list(_PROVIDER_MAP.keys())
+    all_models: list[ModelInfo] = []
+
+    def fetch_provider_models(provider_name: ProviderType) -> list[ModelInfo] | None:
+        """Fetch models from a single provider."""
+        try:
+            provider = _PROVIDER_MAP[provider_name]()
+            return provider.get_models_sync()
+        except Exception as e:  # noqa: BLE001
+            logger.warning("Failed to fetch models from %s: %s", provider_name, str(e))
+            return None
+
+    # Use ThreadPoolExecutor for parallel execution
+    with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
+        # Submit all tasks
+        future_to_provider = {
+            executor.submit(fetch_provider_models, provider): provider
+            for provider in selected_providers
+        }
+
+        # Collect results as they complete
+        for future in concurrent.futures.as_completed(future_to_provider):
+            provider_models = future.result()
+            if provider_models:
+                all_models.extend(provider_models)
+
+    return all_models
+
+
 async def get_all_models(
     *,
     providers: Sequence[ProviderType] | None = None,
@@ -89,4 +135,5 @@ __all__ = [
     "OpenRouterProvider",
     "ProviderType",
     "get_all_models",
+    "get_all_models_sync",
 ]
