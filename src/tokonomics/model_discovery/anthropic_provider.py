@@ -2,14 +2,10 @@
 
 from __future__ import annotations
 
-import json
 import os
 from typing import Any
 
-import httpx
-
 from tokonomics.model_discovery.base import ModelInfo, ModelProvider
-from tokonomics.utils import make_request
 
 
 class AnthropicProvider(ModelProvider):
@@ -29,6 +25,8 @@ class AnthropicProvider(ModelProvider):
             raise RuntimeError(msg)
         self.version = version
         self.base_url = "https://api.anthropic.com/v1"
+        self.headers = {"x-api-key": api_key, "anthropic-version": version}
+        self.params = {"limit": 1000}
 
     def _parse_model(self, data: dict[str, Any]) -> ModelInfo:
         """Parse Anthropic API response into ModelInfo."""
@@ -41,28 +39,6 @@ class AnthropicProvider(ModelProvider):
                 int(data["context_window"]) if "context_window" in data else None
             ),
         )
-
-    async def get_models(self) -> list[ModelInfo]:
-        """Fetch available models from Anthropic."""
-        url = f"{self.base_url}/models"
-        params = {"limit": 1000}
-        headers = {"x-api-key": self.api_key, "anthropic-version": self.version}
-
-        try:
-            response = await make_request(url, params=params, headers=headers)
-            response.raise_for_status()
-            data = response.json()
-            return [self._parse_model(item) for item in data.get("data", [])]
-
-        except httpx.HTTPError as e:
-            msg = f"Failed to fetch models from Anthropic: {e}"
-            raise RuntimeError(msg) from e
-        except json.JSONDecodeError as e:
-            msg = f"Invalid JSON response from Anthropic: {e}"
-            raise RuntimeError(msg) from e
-        except (KeyError, ValueError) as e:
-            msg = f"Invalid data in Anthropic response: {e}"
-            raise RuntimeError(msg) from e
 
 
 if __name__ == "__main__":
