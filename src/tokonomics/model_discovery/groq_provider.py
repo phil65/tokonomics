@@ -30,5 +30,5 @@ class GroqProvider(ModelProvider):
             provider="groq",
             owned_by=str(data["owned_by"]),
             context_window=int(data["context_window"]),
-            is_deprecated=not data.get("active", True),
+            is_deprecated=not data.get("active", False),
         )
