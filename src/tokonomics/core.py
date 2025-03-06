@@ -113,7 +113,10 @@ async def get_model_costs(
     try:
         logger.debug("Downloading pricing data from LiteLLM...")
         data = await get_json(
-            LITELLM_PRICES_URL, cache=not _TESTING, cache_ttl=_CACHE_TIMEOUT
+            LITELLM_PRICES_URL,
+            cache=not _TESTING,
+            cache_ttl=_CACHE_TIMEOUT,
+            return_type=dict,
         )
         assert isinstance(data, dict), f"Expected dict, got {type(data)}"
         logger.debug("Successfully downloaded pricing data")
@@ -242,7 +245,10 @@ async def get_model_limits(
     try:
         logger.debug("Downloading model data from LiteLLM...")
         data = await get_json(
-            LITELLM_PRICES_URL, cache=not _TESTING, cache_ttl=_CACHE_TIMEOUT
+            LITELLM_PRICES_URL,
+            cache=not _TESTING,
+            cache_ttl=_CACHE_TIMEOUT,
+            return_type=dict,
         )
         assert isinstance(data, dict), f"Expected dict, got {type(data)}"
         logger.debug("Successfully downloaded model data")
@@ -316,7 +322,10 @@ async def get_available_models(
     try:
         logger.debug("Downloading model data from LiteLLM...")
         data = await get_json(
-            LITELLM_PRICES_URL, cache=not _TESTING, cache_ttl=_CACHE_TIMEOUT
+            LITELLM_PRICES_URL,
+            cache=not _TESTING,
+            cache_ttl=_CACHE_TIMEOUT,
+            return_type=dict,
         )
         assert isinstance(data, dict), f"Expected dict, got {type(data)}"
         # Filter out non-dictionary entries (like sample_spec) and collect model names
@@ -363,7 +372,10 @@ async def get_model_capabilities(
     try:
         logger.debug("Downloading model data from LiteLLM...")
         data = await get_json(
-            LITELLM_PRICES_URL, cache=not _TESTING, cache_ttl=_CACHE_TIMEOUT
+            LITELLM_PRICES_URL,
+            cache=not _TESTING,
+            cache_ttl=_CACHE_TIMEOUT,
+            return_type=dict,
         )
         assert isinstance(data, dict), f"Expected dict, got {type(data)}"
         logger.debug("Successfully downloaded model data")

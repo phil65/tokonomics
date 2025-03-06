@@ -34,6 +34,7 @@ class ModelProvider(ABC):
                 headers=self.headers,
                 params=self.params,
                 cache=True,
+                return_type=dict,
             )
 
             if not isinstance(data, dict) or "data" not in data:
@@ -58,6 +59,7 @@ class ModelProvider(ABC):
                 headers=self.headers,
                 params=self.params,
                 cache=True,
+                return_type=dict,
             )
 
             if not isinstance(data, dict) or "data" not in data:
