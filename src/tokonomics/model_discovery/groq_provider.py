@@ -33,3 +33,9 @@ class GroqProvider(ModelProvider):
             context_window=int(data["context_window"]),
             is_deprecated=not data.get("active", False),
         )
+
+
+if __name__ == "__main__":
+    provider = GroqProvider()
+    models = provider.get_models_sync()
+    print(models)

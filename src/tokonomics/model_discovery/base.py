@@ -24,62 +24,48 @@ class ModelProvider(ABC):
 
     def get_models_sync(self) -> list[ModelInfo]:
         """Fetch available models from the provider synchronously."""
-        import json
-
-        import httpx
-
-        from tokonomics.utils import make_request_sync
+        from anyenv import HttpError, get_json_sync
 
         url = f"{self.base_url}/models"
 
         try:
-            response = make_request_sync(url, headers=self.headers, params=self.params)
-            response.raise_for_status()
+            data = get_json_sync(
+                url,
+                headers=self.headers,
+                params=self.params,
+                cache=True,
+            )
 
-            data = response.json()
             if not isinstance(data, dict) or "data" not in data:
                 msg = f"Invalid response format from {self.__class__.__name__}"
                 raise RuntimeError(msg)
 
             return [self._parse_model(item) for item in data["data"]]
 
-        except httpx.HTTPError as e:
+        except HttpError as e:
             msg = f"Failed to fetch models from {self.__class__.__name__}: {e}"
-            raise RuntimeError(msg) from e
-        except json.JSONDecodeError as e:
-            msg = f"Invalid JSON response from {self.__class__.__name__}: {e}"
-            raise RuntimeError(msg) from e
-        except (KeyError, ValueError) as e:
-            msg = f"Invalid data in {self.__class__.__name__} response: {e}"
             raise RuntimeError(msg) from e
 
     async def get_models(self) -> list[ModelInfo]:
         """Fetch available models from the provider asynchronously."""
-        import json
-
-        import httpx
-
-        from tokonomics.utils import make_request
+        from anyenv import HttpError, get_json
 
         url = f"{self.base_url}/models"
 
         try:
-            response = await make_request(url, headers=self.headers, params=self.params)
-            response.raise_for_status()
+            data = await get_json(
+                url,
+                headers=self.headers,
+                params=self.params,
+                cache=True,
+            )
 
-            data = response.json()
             if not isinstance(data, dict) or "data" not in data:
                 msg = f"Invalid response format from {self.__class__.__name__}"
                 raise RuntimeError(msg)
 
             return [self._parse_model(item) for item in data["data"]]
 
-        except httpx.HTTPError as e:
+        except HttpError as e:
             msg = f"Failed to fetch models from {self.__class__.__name__}: {e}"
-            raise RuntimeError(msg) from e
-        except json.JSONDecodeError as e:
-            msg = f"Invalid JSON response from {self.__class__.__name__}: {e}"
-            raise RuntimeError(msg) from e
-        except (KeyError, ValueError) as e:
-            msg = f"Invalid data in {self.__class__.__name__} response: {e}"
             raise RuntimeError(msg) from e
