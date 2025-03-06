@@ -46,6 +46,24 @@ class ModelInfo:
         """Unique litellm style identifier for the model."""
         return f"{self.provider}/{self.id}"
 
+    @property
+    def iconify_icon(self) -> str | None:  # noqa: PLR0911
+        """Iconify icon for the model."""
+        if self.name.startswith("mistral"):
+            return "logos:mistral-ai"
+        if self.name.startswith("openai"):
+            return "logos:openai"
+        if self.name.startswith("claude"):
+            return "logos:anthropic"
+        if self.name.startswith("perplexity"):
+            return "logos:perplexity"
+        if self.name.startswith("hugging"):
+            return "logos:hugging-face"
+        if self.name.startswith("deepseek"):
+            return "arcticons:deepseek"
+
+        return None
+
     def format(self) -> str:
         """Format model information as a human-readable string.
 
