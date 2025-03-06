@@ -2,10 +2,8 @@
 
 from __future__ import annotations
 
-import json
-from typing import Any
+from unittest.mock import AsyncMock, patch
 
-from httpx import AsyncClient
 import pytest
 
 from tokonomics.core import TokenLimits, get_model_costs, get_model_limits
@@ -40,31 +38,28 @@ async def test_get_model_limits_handles_non_numeric_values(
         },
     }
 
-    async def mock_get(*args: object, **kwargs: object) -> MockResponse:
-        return MockResponse(mock_data)  # type: ignore
+    # Mock anyenv.get_json instead of httpx.AsyncClient.get
+    mock_get_json = AsyncMock(return_value=mock_data)
+    with patch("tokonomics.core.get_json", mock_get_json):
+        # Test valid model
+        valid_limits = await get_model_limits("valid-model")
+        assert valid_limits == TokenLimits(
+            total_tokens=32000,
+            input_tokens=24000,
+            output_tokens=8000,
+        )
 
-    # Patch httpx.AsyncClient.get
-    monkeypatch.setattr(AsyncClient, "get", mock_get)
+        # Test model with non-numeric values
+        broken_limits = await get_model_limits("broken-model")
+        assert broken_limits is None
 
-    # Test valid model
-    valid_limits = await get_model_limits("valid-model")
-    assert valid_limits == TokenLimits(
-        total_tokens=32000,
-        input_tokens=24000,
-        output_tokens=8000,
-    )
-
-    # Test model with non-numeric values
-    broken_limits = await get_model_limits("broken-model")
-    assert broken_limits is None
-
-    # Test model with float values
-    float_limits = await get_model_limits("float-model")
-    assert float_limits == TokenLimits(
-        total_tokens=32000,
-        input_tokens=24000,
-        output_tokens=8000,
-    )
+        # Test model with float values
+        float_limits = await get_model_limits("float-model")
+        assert float_limits == TokenLimits(
+            total_tokens=32000,
+            input_tokens=24000,
+            output_tokens=8000,
+        )
 
 
 @pytest.mark.asyncio
@@ -91,45 +86,31 @@ async def test_get_model_costs_handles_non_numeric_values(
         },
     }
 
-    async def mock_get(*args: object, **kwargs: object) -> MockResponse:
-        return MockResponse(mock_data)  # type: ignore
+    # Mock anyenv.get_json instead of httpx.AsyncClient.get
+    mock_get_json = AsyncMock(return_value=mock_data)
+    with patch("tokonomics.core.get_json", mock_get_json):
+        # Test valid model
+        valid_costs = await get_model_costs("valid-model")
+        assert valid_costs == ModelCosts(
+            input_cost_per_token=0.001,
+            output_cost_per_token=0.002,
+        )
 
-    # Patch httpx.AsyncClient.get
-    monkeypatch.setattr(AsyncClient, "get", mock_get)
+        # Test model with non-numeric values
+        broken_costs = await get_model_costs("broken-model")
+        assert broken_costs is None
 
-    # Test valid model
-    valid_costs = await get_model_costs("valid-model")
-    assert valid_costs == ModelCosts(
-        input_cost_per_token=0.001,
-        output_cost_per_token=0.002,
-    )
+        # Test model with longer float values
+        float_costs = await get_model_costs("float-model")
+        assert float_costs == ModelCosts(
+            input_cost_per_token=0.0015,
+            output_cost_per_token=0.002,
+        )
 
-    # Test model with non-numeric values
-    broken_costs = await get_model_costs("broken-model")
-    assert broken_costs is None
-
-    # Test model with longer float values
-    float_costs = await get_model_costs("float-model")
-    assert float_costs == ModelCosts(
-        input_cost_per_token=0.0015,
-        output_cost_per_token=0.002,
-    )
-
-    # Test model with missing cost fields
-    missing_costs = await get_model_costs("missing-fields")
-    assert missing_costs is None
+        # Test model with missing cost fields
+        missing_costs = await get_model_costs("missing-fields")
+        assert missing_costs is None
 
 
-class MockResponse:
-    def __init__(self, data: Any) -> None:
-        self.data = data
-        self._content = json.dumps(data).encode()
-        self.status_code = 200  # Needed by hishel
-        self.content = self._content  # Needed by download_json
-        self.headers = {"content-length": str(len(self._content))}
-
-    def json(self) -> Any:
-        return self.data
-
-    def raise_for_status(self) -> None:
-        pass
+if __name__ == "__main__":
+    pytest.main([__file__, "-vv"])

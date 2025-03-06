@@ -30,10 +30,9 @@ SAMPLE_PRICING_DATA = {
 def setup_teardown():
     """Setup and teardown for each test."""
     import tokonomics.core
-    import tokonomics.utils
 
     # Disable caching during tests
-    tokonomics.utils._TESTING = True
+    tokonomics.core._TESTING = True
 
     # Clear in-memory cache
     tokonomics.core._cost_cache.clear()
@@ -41,7 +40,7 @@ def setup_teardown():
     yield
 
     # Reset after test
-    tokonomics.utils._TESTING = False
+    tokonomics.core._TESTING = False
     tokonomics.core._cost_cache.clear()
 
 
@@ -160,3 +159,7 @@ async def test_get_model_limits_fallback(mock_litellm_api):
     assert limits.total_tokens == 4096  # noqa: PLR2004
     assert limits.input_tokens == 4096  # Fallback to max_tokens  # noqa: PLR2004
     assert limits.output_tokens == 4096  # Fallback to max_tokens  # noqa: PLR2004
+
+
+if __name__ == "__main__":
+    pytest.main(["-v", __file__])
