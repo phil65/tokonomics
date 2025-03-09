@@ -29,7 +29,7 @@ class ModelProvider(ABC):
         url = f"{self.base_url}/models"
 
         try:
-            data = get_json_sync(
+            data: dict[str, Any] = get_json_sync(
                 url,
                 headers=self.headers,
                 params=self.params,
@@ -54,7 +54,7 @@ class ModelProvider(ABC):
         url = f"{self.base_url}/models"
 
         try:
-            data = await get_json(
+            data: dict[str, Any] = await get_json(
                 url,
                 headers=self.headers,
                 params=self.params,

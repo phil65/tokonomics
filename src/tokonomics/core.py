@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import logging
 import pathlib
-from typing import cast
+from typing import Any, cast
 
 from anyenv import get_json
 from platformdirs import user_data_dir
@@ -112,7 +112,7 @@ async def get_model_costs(
 
     try:
         logger.debug("Downloading pricing data from LiteLLM...")
-        data = await get_json(
+        data: dict[str, Any] = await get_json(
             LITELLM_PRICES_URL,
             cache=not _TESTING,
             cache_ttl=_CACHE_TIMEOUT,
@@ -244,7 +244,7 @@ async def get_model_limits(
 
     try:
         logger.debug("Downloading model data from LiteLLM...")
-        data = await get_json(
+        data: dict[str, Any] = await get_json(
             LITELLM_PRICES_URL,
             cache=not _TESTING,
             cache_ttl=_CACHE_TIMEOUT,
@@ -321,7 +321,7 @@ async def get_available_models(
 
     try:
         logger.debug("Downloading model data from LiteLLM...")
-        data = await get_json(
+        data: dict[str, Any] = await get_json(
             LITELLM_PRICES_URL,
             cache=not _TESTING,
             cache_ttl=_CACHE_TIMEOUT,
@@ -371,7 +371,7 @@ async def get_model_capabilities(
 
     try:
         logger.debug("Downloading model data from LiteLLM...")
-        data = await get_json(
+        data: dict[str, Any] = await get_json(
             LITELLM_PRICES_URL,
             cache=not _TESTING,
             cache_ttl=_CACHE_TIMEOUT,
