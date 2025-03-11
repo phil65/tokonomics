@@ -48,17 +48,50 @@ class GitHubProvider(ModelProvider):
             "Content-Type": "application/json",
             "Authorization": f"Bearer {self.token}",
         }
-        self.params = {
+
+    async def _fetch_models(self, is_free: bool) -> list[ModelInfo]:
+        """Fetch models with specific freePlayground value."""
+        from anyenv import post
+
+        params = {
             "filters": [
-                {"field": "freePlayground", "values": ["true"], "operator": "eq"},
+                {
+                    "field": "freePlayground",
+                    "values": ["true" if is_free else "false"],
+                    "operator": "eq",
+                },
                 {"field": "labels", "values": ["latest"], "operator": "eq"},
             ],
             "order": [{"field": "displayName", "direction": "asc"}],
         }
 
+        try:
+            response = await post(
+                self.models_url,
+                json=params,
+                headers=self.headers,
+                cache=True,
+            )
+            data = await response.json()
+            if not isinstance(data, dict) or "summaries" not in data:
+                msg = "Invalid response format from GitHub Models API"
+                raise RuntimeError(msg)  # noqa: TRY301
+
+            # Inject is_free into each model's data
+            summaries = []
+            for item in data["summaries"]:
+                item_with_free = item.copy()  # Make a copy to not modify the original
+                item_with_free["is_free"] = is_free
+                summaries.append(item_with_free)
+
+            return [self._parse_model(item) for item in summaries]
+        except Exception as e:
+            msg = f"Failed to fetch models from GitHub: {e}"
+            logger.exception(msg)
+            raise RuntimeError(msg) from e
+
     def _parse_model(self, data: dict[str, Any]) -> ModelInfo:
         """Parse GitHub models API response into ModelInfo."""
-        # Extract task and inferenceTasks
         inference_task = ""
         if data.get("task"):
             inference_task = data["task"]
@@ -109,59 +142,57 @@ class GitHubProvider(ModelProvider):
             max_output_tokens=max_output_tokens,
             input_modalities=input_modalities,
             output_modalities=output_modalities,
+            is_free=data.get("is_free", True),
         )
 
     async def get_models(self) -> list[ModelInfo]:
-        """Override the base method to handle GitHub's unique API structure."""
-        from anyenv import post
-
-        try:
-            response = await post(
-                self.models_url,
-                json=self.params,
-                headers=self.headers,
-                cache=True,
-            )
-            data = await response.json()
-            if not isinstance(data, dict) or "summaries" not in data:
-                msg = "Invalid response format from GitHub Models API"
-                raise RuntimeError(msg)  # noqa: TRY301
-
-            # Process summaries directly - they contain more data than our mapping
-            models = [self._parse_model(item) for item in data["summaries"]]
-        except Exception as e:
-            msg = f"Failed to fetch models from GitHub: {e}"
-            logger.exception(msg)
-            raise RuntimeError(msg) from e
-        else:
-            return models
+        """Get both free and paid models through separate API calls."""
+        free_models = await self._fetch_models(is_free=True)
+        paid_models = await self._fetch_models(is_free=False)
+        return free_models + paid_models
 
     def get_models_sync(self) -> list[ModelInfo]:
         """Override the base method to handle GitHub's unique API structure."""
         import httpx
 
-        try:
-            response = httpx.post(self.models_url, json=self.params, headers=self.headers)
+        def fetch_sync(is_free: bool) -> list[ModelInfo]:
+            params = {
+                "filters": [
+                    {
+                        "field": "freePlayground",
+                        "values": ["true" if is_free else "false"],
+                        "operator": "eq",
+                    },
+                    {"field": "labels", "values": ["latest"], "operator": "eq"},
+                ],
+                "order": [{"field": "displayName", "direction": "asc"}],
+            }
 
+            response = httpx.post(self.models_url, json=params, headers=self.headers)
             if response.status_code != 200:  # noqa: PLR2004
                 msg = f"Failed to fetch GitHub models: {response.status_code} - {response.text}"  # noqa: E501
-                raise RuntimeError(msg)  # noqa: TRY301
+                raise RuntimeError(msg)
 
             data = response.json()
-
             if not isinstance(data, dict) or "summaries" not in data:
                 msg = "Invalid response format from GitHub Models API"
-                raise RuntimeError(msg)  # noqa: TRY301
+                raise RuntimeError(msg)
+            summaries = []
+            for item in data["summaries"]:
+                item_with_free = item.copy()  # Make a copy to not modify the original
+                item_with_free["is_free"] = is_free
+                summaries.append(item_with_free)
 
-            # Process summaries directly - they contain more data than our mapping
-            models = [self._parse_model(item) for item in data["summaries"]]
+            return [self._parse_model(item) for item in summaries]
 
+        try:
+            free_models = fetch_sync(is_free=True)
+            paid_models = fetch_sync(is_free=False)
+            return free_models + paid_models
         except Exception as e:
             msg = f"Failed to fetch models from GitHub: {e}"
             logger.exception(msg)
             raise RuntimeError(msg) from e
-        else:
-            return models
 
 
 if __name__ == "__main__":
