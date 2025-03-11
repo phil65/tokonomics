@@ -45,6 +45,8 @@ class ModelInfo:
     """Supported input modalities (text, image, audio, video, etc.)."""
     output_modalities: list[Modality] = field(default_factory=lambda: ["text"])
     """Supported output modalities (text, image, audio, video, etc.)."""
+    is_free: bool = False
+    """Whether this model is free to use."""
 
     @property
     def pydantic_ai_id(self) -> str:
