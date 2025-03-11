@@ -28,12 +28,16 @@ class OpenRouterProvider(ModelProvider):
             prompt=float(data["pricing"]["prompt"]),
             completion=float(data["pricing"]["completion"]),
         )
+        model_id = str(data["id"])
+        is_free = model_id.endswith(":free")
+
         return ModelInfo(
             id=str(data["id"]),
             name=str(data["name"]),
             provider="openrouter",
             description=str(data.get("description")),
             pricing=pricing,
+            is_free=is_free,
         )
 
 
@@ -43,4 +47,4 @@ if __name__ == "__main__":
     provider = OpenRouterProvider(api_key="your_api_key")
     models = asyncio.run(provider.get_models())
     for model in models:
-        print(model.format())
+        print(model.id)
