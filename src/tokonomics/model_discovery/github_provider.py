@@ -7,7 +7,7 @@ import os
 from typing import Any
 
 from tokonomics.model_discovery.base import ModelProvider
-from tokonomics.model_discovery.model_info import ModelInfo
+from tokonomics.model_discovery.model_info import Modality, ModelInfo
 
 
 logger = logging.getLogger(__name__)
@@ -58,10 +58,13 @@ class GitHubProvider(ModelProvider):
 
     def _parse_model(self, data: dict[str, Any]) -> ModelInfo:
         """Parse GitHub models API response into ModelInfo."""
-        # Extract task
+        # Extract task and inferenceTasks
         inference_task = ""
         if data.get("task"):
             inference_task = data["task"]
+        elif data.get("inferenceTasks") and isinstance(data["inferenceTasks"], list):
+            inference_task = data["inferenceTasks"][0] if data["inferenceTasks"] else ""
+
         # Combine summary and task information for description
         description = data.get("summary", "")
         if inference_task:
@@ -71,12 +74,41 @@ class GitHubProvider(ModelProvider):
                 else f"Task: {inference_task}"
             )
 
+        # Extract context window and output tokens
+        context_window = None
+        max_output_tokens = None
+        if isinstance(data.get("modelLimits"), dict) and isinstance(
+            data["modelLimits"].get("textLimits"), dict
+        ):
+            text_limits = data["modelLimits"]["textLimits"]
+            context_window = text_limits.get("inputContextWindow")
+            max_output_tokens = text_limits.get("maxOutputTokens")
+
+        # Extract modalities
+        input_modalities: list[Modality] = ["text"]  # Default
+        output_modalities: list[Modality] = ["text"]  # Default
+        if isinstance(data.get("modelLimits"), dict):
+            if data["modelLimits"].get("supportedInputModalities"):
+                input_modalities = data["modelLimits"]["supportedInputModalities"]
+            if data["modelLimits"].get("supportedOutputModalities"):
+                output_modalities = data["modelLimits"]["supportedOutputModalities"]
+
+        # Use name as ID as it's more consistent with other providers
+        model_id = data.get("name", "")
+        model_name = (
+            data.get("friendly_name", "") or data.get("displayName", "") or model_id
+        )
+
         return ModelInfo(
-            id=str(data["id"]),
-            name=str(data["name"]),
+            id=model_id,
+            name=model_name,
             provider="github",
             description=description,
-            owned_by=str(data.get("publisher", "GitHub")),
+            owned_by=data.get("publisher", "GitHub"),
+            context_window=context_window,
+            max_output_tokens=max_output_tokens,
+            input_modalities=input_modalities,
+            output_modalities=output_modalities,
         )
 
     async def get_models(self) -> list[ModelInfo]:
@@ -95,23 +127,8 @@ class GitHubProvider(ModelProvider):
                 msg = "Invalid response format from GitHub Models API"
                 raise RuntimeError(msg)  # noqa: TRY301
 
-            # Map each API response to our model format
-            models = []
-            for item in data["summaries"]:
-                print(item)
-                model_data = {
-                    "id": item.get("assetId", ""),
-                    "name": item.get("name", ""),
-                    "friendly_name": item.get("displayName", ""),
-                    "task": item.get("inferenceTasks", [""])[0]
-                    if item.get("inferenceTasks")
-                    else "",
-                    "publisher": item.get("publisher", ""),
-                    "summary": item.get("summary", ""),
-                    "version": item.get("version", ""),
-                    "registry_name": item.get("registryName", ""),
-                }
-                models.append(self._parse_model(model_data))
+            # Process summaries directly - they contain more data than our mapping
+            models = [self._parse_model(item) for item in data["summaries"]]
         except Exception as e:
             msg = f"Failed to fetch models from GitHub: {e}"
             logger.exception(msg)
@@ -121,14 +138,10 @@ class GitHubProvider(ModelProvider):
 
     def get_models_sync(self) -> list[ModelInfo]:
         """Override the base method to handle GitHub's unique API structure."""
-        import requests
+        import httpx
 
         try:
-            response = requests.post(
-                self.models_url,
-                json=self.params,
-                headers=self.headers,
-            )
+            response = httpx.post(self.models_url, json=self.params, headers=self.headers)
 
             if response.status_code != 200:  # noqa: PLR2004
                 msg = f"Failed to fetch GitHub models: {response.status_code} - {response.text}"  # noqa: E501
@@ -140,22 +153,8 @@ class GitHubProvider(ModelProvider):
                 msg = "Invalid response format from GitHub Models API"
                 raise RuntimeError(msg)  # noqa: TRY301
 
-            # Map each API response to our model format
-            models = []
-            for item in data["summaries"]:
-                model_data = {
-                    "id": item.get("assetId", ""),
-                    "name": item.get("name", ""),
-                    "friendly_name": item.get("displayName", ""),
-                    "task": item.get("inferenceTasks", [""])[0]
-                    if item.get("inferenceTasks")
-                    else "",
-                    "publisher": item.get("publisher", ""),
-                    "summary": item.get("summary", ""),
-                    "version": item.get("version", ""),
-                    "registry_name": item.get("registryName", ""),
-                }
-                models.append(self._parse_model(model_data))
+            # Process summaries directly - they contain more data than our mapping
+            models = [self._parse_model(item) for item in data["summaries"]]
 
         except Exception as e:
             msg = f"Failed to fetch models from GitHub: {e}"
