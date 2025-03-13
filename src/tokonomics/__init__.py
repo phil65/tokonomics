@@ -21,10 +21,11 @@ from tokonomics.model_discovery import (
     ModelProvider,
     get_all_models,
 )
-
+from tokonomics.model_discovery.copilot_provider import CopilotTokenManager
 
 __all__ = [
     "AnthropicProvider",
+    "CopilotTokenManager",
     "GroqProvider",
     "MistralProvider",
     "ModelCosts",
