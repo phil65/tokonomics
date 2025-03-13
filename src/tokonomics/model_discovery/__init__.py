@@ -14,6 +14,7 @@ from tokonomics.model_discovery.openrouter_provider import OpenRouterProvider
 from tokonomics.model_discovery.base import ModelProvider
 from tokonomics.model_discovery.model_info import ModelPricing, ModelInfo
 from tokonomics.model_discovery.github_provider import GitHubProvider
+from tokonomics.model_discovery.copilot_provider import CopilotProvider
 
 
 if TYPE_CHECKING:
@@ -30,6 +31,7 @@ ProviderType = Literal[
     "openai",
     "openrouter",
     "github",
+    "copilot",
 ]
 
 
@@ -40,6 +42,7 @@ _PROVIDER_MAP: dict[ProviderType, type[ModelProvider]] = {
     "openai": OpenAIProvider,
     "openrouter": OpenRouterProvider,
     "github": GitHubProvider,
+    "copilot": CopilotProvider,
 }
 
 
@@ -143,6 +146,7 @@ async def get_all_models(
 
 __all__ = [
     "AnthropicProvider",
+    "CopilotProvider",
     "GitHubProvider",
     "GroqProvider",
     "MistralProvider",

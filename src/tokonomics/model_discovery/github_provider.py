@@ -110,21 +110,20 @@ class GitHubProvider(ModelProvider):
         # Extract context window and output tokens
         context_window = None
         max_output_tokens = None
-        if isinstance(data.get("modelLimits"), dict) and isinstance(
-            data["modelLimits"].get("textLimits"), dict
-        ):
-            text_limits = data["modelLimits"]["textLimits"]
+        limits = data.get("modelLimits")
+        if isinstance(limits, dict) and isinstance(limits.get("textLimits"), dict):
+            text_limits = limits["textLimits"]
             context_window = text_limits.get("inputContextWindow")
             max_output_tokens = text_limits.get("maxOutputTokens")
 
         # Extract modalities
         input_modalities: list[Modality] = ["text"]  # Default
         output_modalities: list[Modality] = ["text"]  # Default
-        if isinstance(data.get("modelLimits"), dict):
-            if data["modelLimits"].get("supportedInputModalities"):
-                input_modalities = data["modelLimits"]["supportedInputModalities"]
-            if data["modelLimits"].get("supportedOutputModalities"):
-                output_modalities = data["modelLimits"]["supportedOutputModalities"]
+        if isinstance(limits, dict):
+            if limits.get("supportedInputModalities"):
+                input_modalities = limits["supportedInputModalities"]
+            if limits.get("supportedOutputModalities"):
+                output_modalities = limits["supportedOutputModalities"]
 
         # Use name as ID as it's more consistent with other providers
         model_id = data.get("name", "")
