@@ -1,4 +1,4 @@
-__version__ = "0.3.7"
+__version__ = "0.3.8"
 
 from tokonomics.core import (
     get_model_costs,
