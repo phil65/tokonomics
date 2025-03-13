@@ -8,9 +8,6 @@ import os
 import threading
 from typing import Any
 
-import anyenv
-import httpx
-
 from tokonomics.model_discovery.base import ModelProvider
 from tokonomics.model_discovery.model_info import Modality, ModelInfo
 
@@ -59,6 +56,8 @@ class CopilotTokenManager:
 
     def _refresh_token(self) -> None:
         """Refresh the Copilot token using the GitHub OAuth token."""
+        import httpx
+
         try:
             logger.debug("Fetching fresh GitHub Copilot token")
             response = httpx.get(
@@ -196,6 +195,8 @@ class CopilotProvider(ModelProvider):
 
     async def get_models(self) -> list[ModelInfo]:
         """Override the standard get_models to use Copilot's specific endpoint."""
+        import anyenv
+
         try:
             headers = self._get_headers()
             url = f"{self.base_url}/models"
@@ -227,6 +228,8 @@ class CopilotProvider(ModelProvider):
 
     def get_models_sync(self) -> list[ModelInfo]:
         """Synchronous version of get_models."""
+        import anyenv
+
         try:
             headers = self._get_headers()
             url = f"{self.base_url}/models"
@@ -264,7 +267,7 @@ class CopilotProvider(ModelProvider):
 
 
 if __name__ == "__main__":
-    import asyncio
+    import anyenv
 
     # Set up logging
     logging.basicConfig(
@@ -292,4 +295,4 @@ if __name__ == "__main__":
             print(f"Error: {e}")
 
     # Run the async test function
-    asyncio.run(test_provider())
+    anyenv.run_sync(test_provider())
