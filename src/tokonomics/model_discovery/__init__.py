@@ -14,7 +14,7 @@ from tokonomics.model_discovery.openrouter_provider import OpenRouterProvider
 from tokonomics.model_discovery.base import ModelProvider
 from tokonomics.model_discovery.model_info import ModelPricing, ModelInfo
 from tokonomics.model_discovery.github_provider import GitHubProvider
-from tokonomics.model_discovery.copilot_provider import CopilotProvider
+from tokonomics.model_discovery.copilot_provider import CopilotProvider, token_manager
 
 
 if TYPE_CHECKING:
@@ -158,4 +158,5 @@ __all__ = [
     "ProviderType",
     "get_all_models",
     "get_all_models_sync",
+    "token_manager",
 ]
