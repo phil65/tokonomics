@@ -14,6 +14,7 @@ from tokonomics.model_discovery.openrouter_provider import OpenRouterProvider
 from tokonomics.model_discovery.base import ModelProvider
 from tokonomics.model_discovery.model_info import ModelPricing, ModelInfo
 from tokonomics.model_discovery.github_provider import GitHubProvider
+from tokonomics.model_discovery.cerebras_provider import CerebrasProvider
 from tokonomics.model_discovery.copilot_provider import CopilotProvider, token_manager
 
 
@@ -32,6 +33,7 @@ ProviderType = Literal[
     "openrouter",
     "github",
     "copilot",
+    "cerebras",
 ]
 
 
@@ -43,6 +45,7 @@ _PROVIDER_MAP: dict[ProviderType, type[ModelProvider]] = {
     "openrouter": OpenRouterProvider,
     "github": GitHubProvider,
     "copilot": CopilotProvider,
+    "cerebras": CerebrasProvider,
 }
 
 
