@@ -1,6 +1,6 @@
 """Copilot model info Provider."""
 
-from tokonomics.model_discovery.copilot_provider.copilot_provider import (
+from tokonomics.model_discovery.copilot_provider.provider import (
     CopilotProvider,
     CopilotTokenManager,
 )
