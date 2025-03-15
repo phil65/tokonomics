@@ -22,6 +22,7 @@ from tokonomics.model_discovery import (
     get_all_models,
 )
 from tokonomics.model_discovery.copilot_provider import CopilotTokenManager
+from tokonomics.token_count import count_tokens
 
 __all__ = [
     "AnthropicProvider",
@@ -39,6 +40,7 @@ __all__ = [
     "Usage",
     "calculate_pydantic_cost",
     "calculate_token_cost",
+    "count_tokens",
     "get_all_models",
     "get_available_models",
     "get_model_capabilities",
