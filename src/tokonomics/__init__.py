@@ -1,4 +1,7 @@
-__version__ = "0.3.9"
+"""Tokonomics Python library."""
+
+from __future__ import annotations
+
 
 from tokonomics.core import (
     get_model_costs,
@@ -23,6 +26,8 @@ from tokonomics.model_discovery import (
 )
 from tokonomics.model_discovery.copilot_provider import CopilotTokenManager
 from tokonomics.token_count import count_tokens
+
+__version__ = "0.3.9"
 
 __all__ = [
     "AnthropicProvider",
