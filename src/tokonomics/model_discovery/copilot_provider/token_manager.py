@@ -15,6 +15,7 @@ EDITOR_VERSION = "Neovim/0.6.1"
 EDITOR_PLUGIN_VERSION = "copilot.vim/1.16.0"
 USER_AGENT = "GithubCopilot/1.155.0"
 TOKEN_EXPIRY_BUFFER_SECONDS = 120  # Refresh token 2 minutes before expiry
+DELTA = timedelta(seconds=TOKEN_EXPIRY_BUFFER_SECONDS)
 
 
 class CopilotTokenManager:
@@ -23,37 +24,33 @@ class CopilotTokenManager:
     def __init__(self):
         # Get the GitHub OAuth token from environment
         self._github_oauth_token = os.environ.get("GITHUB_COPILOT_API_KEY")
-        if not self._github_oauth_token:
-            msg = "GitHub OAuth token not found in GITHUB_COPILOT_API_KEY env var"
-            raise RuntimeError(msg)
-
         # This will store the short-lived Copilot token
         self._copilot_token = None
         self._token_expires_at = datetime.now()
         self._token_lock = threading.Lock()
         self._api_endpoint = "https://api.githubcopilot.com"
 
-        # Initial token fetch will happen when first needed
-
     def get_token(self) -> str:
         """Get a valid Copilot token, refreshing if needed."""
         with self._token_lock:
             # If token is missing or expires in less than buffer time, refresh it
             now = datetime.now()
-            if self._copilot_token is None or now > self._token_expires_at - timedelta(
-                seconds=TOKEN_EXPIRY_BUFFER_SECONDS
-            ):
+            if self._copilot_token is None or now > self._token_expires_at - DELTA:
                 self._refresh_token()
             assert self._copilot_token, "Copilot token is missing"
             return self._copilot_token
 
     def _refresh_token(self) -> None:
         """Refresh the Copilot token using the GitHub OAuth token."""
-        import httpx
+        import anyenv
+
+        if not self._github_oauth_token:
+            msg = "GitHub OAuth token not found in GITHUB_COPILOT_API_KEY env var"
+            raise RuntimeError(msg)
 
         try:
             logger.debug("Fetching fresh GitHub Copilot token")
-            response = httpx.get(
+            data = anyenv.get_json_sync(
                 "https://api.github.com/copilot_internal/v2/token",
                 headers={
                     "authorization": f"token {self._github_oauth_token}",
@@ -62,19 +59,8 @@ class CopilotTokenManager:
                     "user-agent": USER_AGENT,
                 },
                 timeout=30,
+                return_type=dict,
             )
-
-            if response.status_code != 200:  # noqa: PLR2004
-                logger.error(
-                    "Failed to get Copilot token. Status: %d, Response: %s",
-                    response.status_code,
-                    response.text,
-                )
-                msg = f"Failed to get Copilot token: HTTP {response.status_code}"
-                raise RuntimeError(msg)  # noqa: TRY301
-
-            data = response.json()
-
             # Extract the Copilot token
             self._copilot_token = data.get("token")
             if not self._copilot_token:
