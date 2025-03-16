@@ -38,7 +38,6 @@ async def test_get_model_limits_handles_non_numeric_values(
         },
     }
 
-    # Mock anyenv.get_json instead of httpx.AsyncClient.get
     mock_get_json = AsyncMock(return_value=mock_data)
     with patch("tokonomics.core.get_json", mock_get_json):
         # Test valid model
@@ -86,7 +85,6 @@ async def test_get_model_costs_handles_non_numeric_values(
         },
     }
 
-    # Mock anyenv.get_json instead of httpx.AsyncClient.get
     mock_get_json = AsyncMock(return_value=mock_data)
     with patch("tokonomics.core.get_json", mock_get_json):
         # Test valid model

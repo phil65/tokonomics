@@ -152,7 +152,7 @@ class GitHubProvider(ModelProvider):
 
     def get_models_sync(self) -> list[ModelInfo]:
         """Override the base method to handle GitHub's unique API structure."""
-        import httpx
+        import anyenv
 
         def fetch_sync(is_free: bool) -> list[ModelInfo]:
             params = {
@@ -166,14 +166,13 @@ class GitHubProvider(ModelProvider):
                 ],
                 "order": [{"field": "displayName", "direction": "asc"}],
             }
-
-            response = httpx.post(self.models_url, json=params, headers=self.headers)
-            if response.status_code != 200:  # noqa: PLR2004
-                msg = f"Failed to fetch GitHub models: {response.status_code} - {response.text}"  # noqa: E501
-                raise RuntimeError(msg)
-
-            data = response.json()
-            if not isinstance(data, dict) or "summaries" not in data:
+            data = anyenv.post_json_sync(
+                self.models_url,
+                json_data=params,
+                headers=self.headers,
+                return_type=dict,
+            )
+            if "summaries" not in data:
                 msg = "Invalid response format from GitHub Models API"
                 raise RuntimeError(msg)
             summaries = []

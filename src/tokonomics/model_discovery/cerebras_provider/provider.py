@@ -92,18 +92,17 @@ class CerebrasProvider(ModelProvider):
 
     def get_models_sync(self) -> list[ModelInfo]:
         """Synchronous version of get_models."""
-        import httpx
-
-        url = f"{self.base_url}/models"
+        import anyenv
 
         try:
-            response = httpx.get(url, headers=self.headers, params=self.params)
-            if response.status_code != 200:  # noqa: PLR2004
-                msg = f"Failed to fetch Cerebras models: {response.status_code} - {response.text}"  # noqa: E501
-                raise RuntimeError(msg)  # noqa: TRY301
+            data = anyenv.get_json_sync(
+                f"{self.base_url}/models",
+                headers=self.headers,
+                params=self.params,
+                return_type=dict,
+            )
 
-            data = response.json()
-            if not isinstance(data, dict) or "data" not in data:
+            if "data" not in data:
                 msg = "Invalid response format from Cerebras API"
                 raise RuntimeError(msg)  # noqa: TRY301
 
