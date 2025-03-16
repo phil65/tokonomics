@@ -65,7 +65,7 @@ def find_litellm_model_name(model: str) -> str | None:
 
     # First check direct match
     if model in _cost_cache:
-        logger.debug("Found direct cache match for: %s", model)
+        logger.debug("Found direct cache match for: %r", model)
         return model
 
     # For provider:model format, try both variants
@@ -74,15 +74,15 @@ def find_litellm_model_name(model: str) -> str | None:
         # Try just model name (normalized)
         model_name = model_name.lower()
         if _cost_cache.get(model_name) is not None:
-            logger.debug("Found cache match for base name: %s", model_name)
+            logger.debug("Found cache match for base name: %r", model_name)
             return model_name
         # Try provider/model format (normalized)
         provider_format = f"{provider.lower()}/{model_name}"
         if _cost_cache.get(provider_format) is not None:
-            logger.debug("Found cache match for provider format: %s", provider_format)
+            logger.debug("Found cache match for provider format: %r", provider_format)
             return provider_format
 
-    logger.debug("No cache match found for: %s", model)
+    logger.debug("No cache match found for: %r", model)
     return None
 
 
@@ -119,7 +119,7 @@ async def get_model_costs(
             return_type=dict,
         )
         assert isinstance(data, dict), f"Expected dict, got {type(data)}"
-        logger.debug("Successfully downloaded pricing data")
+        logger.debug("Successfully downloaded pricing data.")
 
         all_costs: dict[str, ModelCosts] = {}
         for name, info in data.items():
@@ -159,7 +159,6 @@ async def get_model_costs(
             # Try base model name
             result = all_costs.get(model_name)
             if result is None:
-                # Try provider/model format
                 provider_format = f"{provider}/{model_name}"
                 result = all_costs.get(provider_format)
 
@@ -167,7 +166,7 @@ async def get_model_costs(
         if result is not None:
             _cost_cache[cache_key] = result
     except Exception as e:  # noqa: BLE001
-        logger.debug("Failed to get model costs: %s", e)
+        logger.debug("Failed to get model costs for %r: %s", model, e)
         return None
     else:
         return result
@@ -197,7 +196,7 @@ async def calculate_token_cost(
     """
     costs = await get_model_costs(model, cache_timeout=cache_timeout)
     if not costs:
-        logger.debug("No costs found for model")
+        logger.debug("No costs found for model %r", model)
         return None
 
     # Convert None values to 0
@@ -294,7 +293,7 @@ async def get_model_limits(
             logger.debug("Found limits for requested model: %s", model)
             return all_limits[normalized_model]
     except Exception as e:
-        error_msg = f"Failed to get model limits: {e}"
+        error_msg = f"Failed to get model limits for {model}: {e}"
         logger.exception(error_msg)
         raise ValueError(error_msg) from e
     else:
@@ -445,7 +444,7 @@ async def get_model_capabilities(
             return result
 
     except Exception as e:
-        error_msg = f"Failed to get model capabilities: {e}"
+        error_msg = f"Failed to get model capabilities for {model}: {e}"
         logger.exception(error_msg)
         raise ValueError(error_msg) from e
 
