@@ -47,7 +47,10 @@ def count_tokens(
     if has_library("tiktoken"):
         import tiktoken
 
-        encoding = tiktoken.encoding_for_model(model or "gpt-3.5-turbo")
+        try:
+            encoding = tiktoken.encoding_for_model(model or "gpt-3.5-turbo")
+        except KeyError:
+            encoding = tiktoken.encoding_for_model("gpt-3.5-turbo")
 
         if isinstance(text, str):
             return len(encoding.encode(text))
