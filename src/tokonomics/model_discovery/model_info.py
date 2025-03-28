@@ -8,6 +8,9 @@ from typing import Literal
 from tokonomics.toko_types import ModelIdentifier  # noqa: TC001
 
 
+Modality = Literal["text", "image", "audio", "video"]
+
+
 @dataclass
 class ModelPricing:
     """Pricing information for a model."""
@@ -16,9 +19,6 @@ class ModelPricing:
     """Cost per token for prompt inputs."""
     completion: float | None = None
     """Cost per token for completion outputs."""
-
-
-Modality = Literal["text", "image", "audio", "video"]
 
 
 @dataclass
@@ -63,17 +63,18 @@ class ModelInfo:
     @property
     def iconify_icon(self) -> str | None:  # noqa: PLR0911
         """Iconify icon for the model."""
-        if self.name.startswith("mistral"):
+        name = self.name.lower()
+        if name.startswith("mistral"):
             return "logos:mistral-ai"
-        if self.name.startswith("openai"):
+        if name.startswith("openai"):
             return "logos:openai"
-        if self.name.startswith("claude"):
+        if name.startswith("claude"):
             return "logos:anthropic"
-        if self.name.startswith("perplexity"):
+        if name.startswith("perplexity"):
             return "logos:perplexity"
-        if self.name.startswith("hugging"):
+        if name.startswith("hugging"):
             return "logos:hugging-face"
-        if self.name.startswith("deepseek"):
+        if name.startswith("deepseek"):
             return "arcticons:deepseek"
 
         return None
