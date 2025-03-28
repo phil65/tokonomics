@@ -5,8 +5,6 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Literal
 
-from tokonomics.toko_types import ModelIdentifier  # noqa: TC001
-
 
 Modality = Literal["text", "image", "audio", "video"]
 
@@ -25,7 +23,7 @@ class ModelPricing:
 class ModelInfo:
     """Unified model information from various providers."""
 
-    id: ModelIdentifier
+    id: str
     """Unique identifier for the model."""
     name: str
     """Display name of the model."""
