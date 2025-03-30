@@ -26,10 +26,6 @@ class CopilotProvider(ModelProvider):
         self.base_url = self._token_manager._api_endpoint
         self.params = {}
 
-    def _get_headers(self) -> dict[str, str]:
-        """Get headers with a current valid token."""
-        return self._token_manager.generate_headers()
-
     def _parse_model(self, data: dict[str, Any]) -> ModelInfo:
         """Parse Copilot API response into ModelInfo."""
         # Extract capabilities and limits
@@ -95,7 +91,7 @@ class CopilotProvider(ModelProvider):
         import anyenv
 
         try:
-            headers = self._get_headers()
+            headers = self._token_manager.generate_headers()
             url = f"{self.base_url}/models"
             response = await anyenv.get(url, headers=headers, timeout=30)
             data = await response.json()
@@ -128,7 +124,7 @@ class CopilotProvider(ModelProvider):
         import anyenv
 
         try:
-            headers = self._get_headers()
+            headers = self._token_manager.generate_headers()
             url = f"{self.base_url}/models"
             data = anyenv.get_json_sync(
                 url, headers=headers, timeout=30, return_type=dict

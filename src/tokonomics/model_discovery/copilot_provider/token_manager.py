@@ -100,3 +100,7 @@ class CopilotTokenManager:
 
 
 token_manager = CopilotTokenManager()
+
+if __name__ == "__main__":
+    token = token_manager.get_token()
+    print(token)
