@@ -89,26 +89,6 @@ class CohereProvider(ModelProvider):
             msg = f"Failed to fetch models from Cohere: {e}"
             raise RuntimeError(msg) from e
 
-    def get_models_sync(self) -> list[ModelInfo]:
-        """Synchronous version of get_models."""
-        import anyenv
-
-        url = f"{self.base_url}/models"
-
-        try:
-            data = anyenv.get_json_sync(
-                url, headers=self.headers, params=self.params, return_type=dict
-            )
-
-            if "models" not in data:
-                msg = "Invalid response format from Cohere API"
-                raise RuntimeError(msg)  # noqa: TRY301
-
-            return [self._parse_model(item) for item in data["models"]]
-        except Exception as e:
-            msg = f"Failed to fetch models from Cohere: {e}"
-            raise RuntimeError(msg) from e
-
 
 if __name__ == "__main__":
     import asyncio

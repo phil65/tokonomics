@@ -36,6 +36,12 @@ class GroqProvider(ModelProvider):
 
 
 if __name__ == "__main__":
-    provider = GroqProvider()
-    models = provider.get_models_sync()
-    print(models)
+
+    async def main():
+        provider = GroqProvider()
+        models = await provider.get_models()
+        print(models)
+
+    import asyncio
+
+    asyncio.run(main())

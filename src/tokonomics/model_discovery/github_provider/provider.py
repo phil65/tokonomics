@@ -150,48 +150,6 @@ class GitHubProvider(ModelProvider):
         paid_models = await self._fetch_models(is_free=False)
         return free_models + paid_models
 
-    def get_models_sync(self) -> list[ModelInfo]:
-        """Override the base method to handle GitHub's unique API structure."""
-        import anyenv
-
-        def fetch_sync(is_free: bool) -> list[ModelInfo]:
-            params = {
-                "filters": [
-                    {
-                        "field": "freePlayground",
-                        "values": ["true" if is_free else "false"],
-                        "operator": "eq",
-                    },
-                    {"field": "labels", "values": ["latest"], "operator": "eq"},
-                ],
-                "order": [{"field": "displayName", "direction": "asc"}],
-            }
-            data = anyenv.post_json_sync(
-                self.models_url,
-                json_data=params,
-                headers=self.headers,
-                return_type=dict,
-            )
-            if "summaries" not in data:
-                msg = "Invalid response format from GitHub Models API"
-                raise RuntimeError(msg)
-            summaries = []
-            for item in data["summaries"]:
-                item_with_free = item.copy()  # Make a copy to not modify the original
-                item_with_free["is_free"] = is_free
-                summaries.append(item_with_free)
-
-            return [self._parse_model(item) for item in summaries]
-
-        try:
-            free_models = fetch_sync(is_free=True)
-            paid_models = fetch_sync(is_free=False)
-            return free_models + paid_models
-        except Exception as e:
-            msg = f"Failed to fetch models from GitHub: {e}"
-            logger.exception(msg)
-            raise RuntimeError(msg) from e
-
 
 if __name__ == "__main__":
     import asyncio

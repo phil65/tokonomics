@@ -22,31 +22,6 @@ class ModelProvider(ABC):
     def _parse_model(self, data: dict[str, Any]) -> ModelInfo:
         """Parse provider-specific API response into ModelInfo."""
 
-    def get_models_sync(self) -> list[ModelInfo]:
-        """Fetch available models from the provider synchronously."""
-        from anyenv import HttpError, get_json_sync
-
-        url = f"{self.base_url}/models"
-
-        try:
-            data: dict[str, Any] = get_json_sync(
-                url,
-                headers=self.headers,
-                params=self.params,
-                cache=True,
-                return_type=dict,
-            )
-
-            if not isinstance(data, dict) or "data" not in data:
-                msg = f"Invalid response format from {self.__class__.__name__}"
-                raise RuntimeError(msg)
-
-            return [self._parse_model(item) for item in data["data"]]
-
-        except HttpError as e:
-            msg = f"Failed to fetch models from {self.__class__.__name__}: {e}"
-            raise RuntimeError(msg) from e
-
     async def get_models(self) -> list[ModelInfo]:
         """Fetch available models from the provider asynchronously."""
         from anyenv import HttpError, get_json

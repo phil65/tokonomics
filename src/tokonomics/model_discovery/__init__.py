@@ -73,9 +73,11 @@ def get_all_models_sync(
 
     def fetch_provider_models(provider_name: ProviderType) -> list[ModelInfo] | None:
         """Fetch models from a single provider."""
+        import anyenv
+
         try:
             provider = _PROVIDER_MAP[provider_name]()
-            models = provider.get_models_sync()
+            models = anyenv.run_sync(provider.get_models())
             if not include_deprecated:
                 models = [model for model in models if not model.is_deprecated]
         except Exception as e:  # noqa: BLE001

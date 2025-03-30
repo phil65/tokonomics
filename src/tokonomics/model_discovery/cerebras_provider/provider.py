@@ -90,27 +90,6 @@ class CerebrasProvider(ModelProvider):
             msg = f"Failed to fetch models from Cerebras: {e}"
             raise RuntimeError(msg) from e
 
-    def get_models_sync(self) -> list[ModelInfo]:
-        """Synchronous version of get_models."""
-        import anyenv
-
-        try:
-            data = anyenv.get_json_sync(
-                f"{self.base_url}/models",
-                headers=self.headers,
-                params=self.params,
-                return_type=dict,
-            )
-
-            if "data" not in data:
-                msg = "Invalid response format from Cerebras API"
-                raise RuntimeError(msg)  # noqa: TRY301
-
-            return [self._parse_model(item) for item in data["data"]]
-        except Exception as e:
-            msg = f"Failed to fetch models from Cerebras: {e}"
-            raise RuntimeError(msg) from e
-
 
 if __name__ == "__main__":
     import asyncio

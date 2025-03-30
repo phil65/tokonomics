@@ -91,7 +91,7 @@ class CopilotProvider(ModelProvider):
         import anyenv
 
         try:
-            headers = self._token_manager.generate_headers()
+            headers = await self._token_manager.generate_headers()
             url = f"{self.base_url}/models"
             response = await anyenv.get(url, headers=headers, timeout=30)
             data = await response.json()
@@ -104,45 +104,6 @@ class CopilotProvider(ModelProvider):
                 if not model.get("model_picker_enabled", False):
                     continue
                 capabilities = model.get("capabilities", {})
-                if (
-                    capabilities.get("type") != "chat"
-                    or not capabilities.get("supports", {}).get("tool_calls", False)
-                    or model["id"] in COPILOT_EXCLUDED_MODELS
-                ):
-                    continue
-
-                models.append(self._parse_model(model))
-        except Exception as e:
-            msg = f"Failed to fetch models from Copilot: {e}"
-            logger.exception(msg)
-            raise RuntimeError(msg) from e
-        else:
-            return models
-
-    def get_models_sync(self) -> list[ModelInfo]:
-        """Synchronous version of get_models."""
-        import anyenv
-
-        try:
-            headers = self._token_manager.generate_headers()
-            url = f"{self.base_url}/models"
-            data = anyenv.get_json_sync(
-                url, headers=headers, timeout=30, return_type=dict
-            )
-            if "data" not in data:
-                msg = f"Invalid response format from Copilot API: {data}"
-                raise RuntimeError(msg)  # noqa: TRY301
-
-            models = []
-            for model in data["data"]:
-                # Skip models without model picker enabled
-                if not model.get("model_picker_enabled", False):
-                    continue
-
-                # Get capabilities
-                capabilities = model.get("capabilities", {})
-
-                # Skip models that don't support chat or tool calls
                 if (
                     capabilities.get("type") != "chat"
                     or not capabilities.get("supports", {}).get("tool_calls", False)

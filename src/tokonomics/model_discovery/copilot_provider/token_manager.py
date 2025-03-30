@@ -39,7 +39,36 @@ class CopilotTokenManager:
         self._token_lock = threading.Lock()
         self._api_endpoint = "https://api.githubcopilot.com"
 
-    def get_token(self) -> str:
+    async def get_token(self) -> str:
+        """Get a valid Copilot token, refreshing if needed."""
+        import anyenv
+
+        with self._token_lock:
+            # If token is missing or expires in less than buffer time, refresh it
+            now = datetime.now()
+            if self._copilot_token is None or now > self._token_expires_at - DELTA:
+                if not self._github_oauth_token:
+                    msg = "GitHub OAuth token not found in GITHUB_COPILOT_API_KEY env var"
+                    raise RuntimeError(msg)
+
+                try:
+                    logger.debug("Fetching fresh GitHub Copilot token")
+                    data = await anyenv.get_json(
+                        BASE_URL,
+                        headers=get_token_headers(self._github_oauth_token),
+                        return_type=dict,
+                    )
+                except Exception as e:
+                    logger.exception("Failed to refresh GitHub Copilot token")
+                    if not self._copilot_token:
+                        msg = "Failed to obtain GitHub Copilot token"
+                        raise RuntimeError(msg) from e
+                else:
+                    self.handle_token_response(data)
+            assert self._copilot_token, "Copilot token is missing"
+            return self._copilot_token
+
+    def get_token_sync(self) -> str:
         """Get a valid Copilot token, refreshing if needed."""
         import anyenv
 
@@ -83,10 +112,10 @@ class CopilotTokenManager:
         expires_at = self._token_expires_at.isoformat()
         logger.debug("Copilot token refreshed, valid until: %s", expires_at)
 
-    def generate_headers(self) -> dict[str, str]:
+    async def generate_headers(self) -> dict[str, str]:
         """Generate headers for GitHub Copilot API requests."""
         return {
-            "Authorization": f"Bearer {self.get_token()}",
+            "Authorization": f"Bearer {await self.get_token()}",
             "editor-version": "Neovim/0.9.0",
             "Copilot-Integration-Id": "vscode-chat",
         }
@@ -95,5 +124,5 @@ class CopilotTokenManager:
 token_manager = CopilotTokenManager()
 
 if __name__ == "__main__":
-    token = token_manager.get_token()
+    token = token_manager.get_token_sync()
     print(token)
