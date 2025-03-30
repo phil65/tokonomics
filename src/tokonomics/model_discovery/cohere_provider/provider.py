@@ -31,9 +31,9 @@ class CohereProvider(ModelProvider):
         name = data.get("name", "")
 
         # Determine supported modalities
-        input_modalities: list[Modality] = ["text"]
+        input_modalities: set[Modality] = {"text"}
         if data.get("supports_vision"):
-            input_modalities.append("image")
+            input_modalities.add("image")
 
         # Extract context length if available
         context_window = None

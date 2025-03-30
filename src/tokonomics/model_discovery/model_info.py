@@ -41,9 +41,9 @@ class ModelInfo:
     """Whether this model version is deprecated."""
     max_output_tokens: int | None = None
     """Maximum number of tokens the model can generate in a response."""
-    input_modalities: list[Modality] = field(default_factory=lambda: ["text"])
+    input_modalities: set[Modality] = field(default_factory=lambda: {"text"})
     """Supported input modalities (text, image, audio, video, etc.)."""
-    output_modalities: list[Modality] = field(default_factory=lambda: ["text"])
+    output_modalities: set[Modality] = field(default_factory=lambda: {"text"})
     """Supported output modalities (text, image, audio, video, etc.)."""
     is_free: bool = False
     """Whether this model is free to use."""
@@ -106,10 +106,10 @@ class ModelInfo:
             if self.pricing.completion is not None:
                 lines.append(f"Completion cost: ${self.pricing.completion:.6f}/token")
 
-        if self.input_modalities and self.input_modalities != ["text"]:
+        if self.input_modalities and self.input_modalities != {"text"}:
             lines.append(f"Input modalities: {', '.join(self.input_modalities)}")
 
-        if self.output_modalities and self.output_modalities != ["text"]:
+        if self.output_modalities and self.output_modalities != {"text"}:
             lines.append(f"Output modalities: {', '.join(self.output_modalities)}")
 
         if self.description:

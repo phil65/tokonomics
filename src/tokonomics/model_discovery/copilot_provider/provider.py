@@ -38,12 +38,12 @@ class CopilotProvider(ModelProvider):
         max_output_tokens = limits.get("max_output_tokens")
 
         # Determine modalities
-        input_modalities: list[Modality] = ["text"]
-        output_modalities: list[Modality] = ["text"]
+        input_modalities: set[Modality] = {"text"}
+        output_modalities: set[Modality] = {"text"}
 
         # Add vision capability if supported
         if capabilities.get("supports", {}).get("vision"):
-            input_modalities.append("image")
+            input_modalities.add("image")
 
         # Extract model family and version info
         model_family = capabilities.get("family", "")
