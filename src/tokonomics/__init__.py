@@ -27,7 +27,7 @@ from tokonomics.model_discovery import (
 from tokonomics.model_discovery.copilot_provider import CopilotTokenManager
 from tokonomics.token_count import count_tokens
 
-__version__ = "0.3.11"
+__version__ = "0.3.12"
 
 __all__ = [
     "AnthropicProvider",
