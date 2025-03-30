@@ -11,6 +11,7 @@ import threading
 logger = logging.getLogger(__name__)
 
 # Constants for token management
+BASE_URL = "https://api.github.com/copilot_internal/v2/token"
 EDITOR_VERSION = "Neovim/0.6.1"
 EDITOR_PLUGIN_VERSION = "copilot.vim/1.16.0"
 USER_AGENT = "GithubCopilot/1.155.0"
@@ -51,7 +52,7 @@ class CopilotTokenManager:
         try:
             logger.debug("Fetching fresh GitHub Copilot token")
             data = anyenv.get_json_sync(
-                "https://api.github.com/copilot_internal/v2/token",
+                BASE_URL,
                 headers={
                     "authorization": f"token {self._github_oauth_token}",
                     "editor-version": EDITOR_VERSION,
@@ -61,34 +62,28 @@ class CopilotTokenManager:
                 timeout=30,
                 return_type=dict,
             )
-            # Extract the Copilot token
-            self._copilot_token = data.get("token")
-            if not self._copilot_token:
-                msg = "No token found in response from Copilot API"
-                raise RuntimeError(msg)  # noqa: TRY301
-
-            # Extract expiration time
-            expires_at = data.get("expires_at")
-            if expires_at is not None:
-                self._token_expires_at = datetime.fromtimestamp(expires_at)
-            else:
-                # Default expiry: 25 minutes if not specified
-                self._token_expires_at = datetime.now() + timedelta(minutes=25)
-
-            # Update API endpoint if provided
-            endpoints = data.get("endpoints", {})
-            if "api" in endpoints:
-                self._api_endpoint = endpoints["api"]
-
-            logger.debug(
-                "Copilot token refreshed, valid until: %s",
-                self._token_expires_at.isoformat(),
-            )
         except Exception as e:
             logger.exception("Failed to refresh GitHub Copilot token")
             if not self._copilot_token:
                 msg = "Failed to obtain GitHub Copilot token"
                 raise RuntimeError(msg) from e
+        else:
+            self.handle_token_response(data)
+
+    def handle_token_response(self, data):
+        self._copilot_token = data.get("token")
+        if not self._copilot_token:
+            msg = "No token found in response from Copilot API"
+            raise RuntimeError(msg)
+        if expires_at := data.get("expires_at"):
+            self._token_expires_at = datetime.fromtimestamp(expires_at)
+        else:
+            # Default expiry: 25 minutes if not specified
+            self._token_expires_at = datetime.now() + timedelta(minutes=25)
+        if "api" in (endpoints := data.get("endpoints", {})):
+            self._api_endpoint = endpoints["api"]
+        expires_at = self._token_expires_at.isoformat()
+        logger.debug("Copilot token refreshed, valid until: %s", expires_at)
 
     def generate_headers(self) -> dict[str, str]:
         """Generate headers for GitHub Copilot API requests."""
