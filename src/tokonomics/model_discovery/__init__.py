@@ -16,6 +16,8 @@ from tokonomics.model_discovery.model_info import ModelPricing, ModelInfo
 from tokonomics.model_discovery.github_provider import GitHubProvider
 from tokonomics.model_discovery.cerebras_provider import CerebrasProvider
 from tokonomics.model_discovery.copilot_provider import CopilotProvider, token_manager
+from tokonomics.model_discovery.gemini_provider import GeminiProvider
+from tokonomics.model_discovery.cohere_provider import CohereProvider
 
 
 if TYPE_CHECKING:
@@ -34,6 +36,8 @@ ProviderType = Literal[
     "github",
     "copilot",
     "cerebras",
+    "gemini",
+    "cohere",
 ]
 
 
@@ -46,6 +50,8 @@ _PROVIDER_MAP: dict[ProviderType, type[ModelProvider]] = {
     "github": GitHubProvider,
     "copilot": CopilotProvider,
     "cerebras": CerebrasProvider,
+    "gemini": GeminiProvider,
+    "cohere": CohereProvider,
 }
 
 
@@ -151,7 +157,10 @@ async def get_all_models(
 
 __all__ = [
     "AnthropicProvider",
+    "CerebrasProvider",
+    "CohereProvider",
     "CopilotProvider",
+    "GeminiProvider",
     "GitHubProvider",
     "GroqProvider",
     "MistralProvider",
