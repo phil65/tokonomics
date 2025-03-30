@@ -19,13 +19,21 @@ TOKEN_EXPIRY_BUFFER_SECONDS = 120  # Refresh token 2 minutes before expiry
 DELTA = timedelta(seconds=TOKEN_EXPIRY_BUFFER_SECONDS)
 
 
+def get_token_headers(github_oauth_token: str) -> dict[str, str]:
+    """Get headers for token request."""
+    return {
+        "Authorization": f"Bearer {github_oauth_token}",
+        "User-Agent": USER_AGENT,
+        "X-Editor-Version": EDITOR_VERSION,
+        "X-Editor-Plugin-Version": EDITOR_PLUGIN_VERSION,
+    }
+
+
 class CopilotTokenManager:
     """Manager for GitHub Copilot API tokens."""
 
     def __init__(self):
-        # Get the GitHub OAuth token from environment
         self._github_oauth_token = os.environ.get("GITHUB_COPILOT_API_KEY")
-        # This will store the short-lived Copilot token
         self._copilot_token = None
         self._token_expires_at = datetime.now()
         self._token_lock = threading.Lock()
@@ -33,42 +41,32 @@ class CopilotTokenManager:
 
     def get_token(self) -> str:
         """Get a valid Copilot token, refreshing if needed."""
+        import anyenv
+
         with self._token_lock:
             # If token is missing or expires in less than buffer time, refresh it
             now = datetime.now()
             if self._copilot_token is None or now > self._token_expires_at - DELTA:
-                self._refresh_token()
+                if not self._github_oauth_token:
+                    msg = "GitHub OAuth token not found in GITHUB_COPILOT_API_KEY env var"
+                    raise RuntimeError(msg)
+
+                try:
+                    logger.debug("Fetching fresh GitHub Copilot token")
+                    data = anyenv.get_json_sync(
+                        BASE_URL,
+                        headers=get_token_headers(self._github_oauth_token),
+                        return_type=dict,
+                    )
+                except Exception as e:
+                    logger.exception("Failed to refresh GitHub Copilot token")
+                    if not self._copilot_token:
+                        msg = "Failed to obtain GitHub Copilot token"
+                        raise RuntimeError(msg) from e
+                else:
+                    self.handle_token_response(data)
             assert self._copilot_token, "Copilot token is missing"
             return self._copilot_token
-
-    def _refresh_token(self) -> None:
-        """Refresh the Copilot token using the GitHub OAuth token."""
-        import anyenv
-
-        if not self._github_oauth_token:
-            msg = "GitHub OAuth token not found in GITHUB_COPILOT_API_KEY env var"
-            raise RuntimeError(msg)
-
-        try:
-            logger.debug("Fetching fresh GitHub Copilot token")
-            data = anyenv.get_json_sync(
-                BASE_URL,
-                headers={
-                    "authorization": f"token {self._github_oauth_token}",
-                    "editor-version": EDITOR_VERSION,
-                    "editor-plugin-version": EDITOR_PLUGIN_VERSION,
-                    "user-agent": USER_AGENT,
-                },
-                timeout=30,
-                return_type=dict,
-            )
-        except Exception as e:
-            logger.exception("Failed to refresh GitHub Copilot token")
-            if not self._copilot_token:
-                msg = "Failed to obtain GitHub Copilot token"
-                raise RuntimeError(msg) from e
-        else:
-            self.handle_token_response(data)
 
     def handle_token_response(self, data):
         self._copilot_token = data.get("token")
