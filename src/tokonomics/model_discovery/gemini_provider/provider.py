@@ -25,41 +25,60 @@ class GeminiProvider(ModelProvider):
 
     def _parse_model(self, data: dict[str, Any]) -> ModelInfo:
         """Parse Gemini API response into ModelInfo."""
-        model_id = data.get("name", "")
+        model_id = str(data.get("name", ""))
         if model_id.startswith("models/"):
             model_id = model_id[7:]  # Remove 'models/' prefix
 
+        display_name = str(data.get("displayName", model_id))
+
+        # Check for embedding model indicators
+        is_embedding = False
+        model_id_lower = model_id.lower()
+        display_name_lower = display_name.lower()
+        description = data.get("description", "").lower()
+
+        # Check name/ID for embedding indicators
+        if "embed" in model_id_lower or "embed" in display_name_lower:
+            is_embedding = True
+
+        # Check generation methods for embedding indicators
+        generation_methods = data.get("supportedGenerationMethods", [])
+        if any(method in ("embedContent", "embedText") for method in generation_methods):
+            is_embedding = True
+
+        # Check output token limit (embedding models typically output only 1 token)
+        if data.get("outputTokenLimit") == 1:
+            is_embedding = True
+
+        # Check description for embedding indicators
+        if "distributed representation" in description:
+            is_embedding = True
+
+        # Determine input/output modalities
         input_modalities: set[Modality] = {"text"}
         output_modalities: set[Modality] = {"text"}
-        model_name = data.get("displayName", "").lower()
-        model_description = data.get("description", "").lower()
-        if "vision" in model_name or "multimodal" in model_description:
+
+        if "vision" in display_name_lower or "multimodal" in description:
             input_modalities.add("image")
-        if "image generation" in model_name or "imagen" in model_id.lower():
+
+        # Check for image generation capabilities
+        if "image generation" in display_name_lower or "imagen" in model_id_lower:
             output_modalities.add("image")
-        generation_methods = data.get("supportedGenerationMethods", [])
-        if "predict" in generation_methods and "imagen" in model_id.lower():
+
+        if "predict" in generation_methods and "imagen" in model_id_lower:
             output_modalities.add("image")
-        methods_str = ", ".join(generation_methods) if generation_methods else "None"
-        description = data.get("description", "")
-        description_parts = [description] if description else []
-        if generation_methods:
-            description_parts.append(f"Supported generation methods: {methods_str}")
-        if "temperature" in data:
-            description_parts.append(f"Default temperature: {data['temperature']}")
-        if "maxTemperature" in data:
-            description_parts.append(f"Max temperature: {data['maxTemperature']}")
-        full_description = "\n".join(description_parts) if description_parts else None
+
         return ModelInfo(
             id=model_id,
-            name=data.get("displayName", model_id),
+            name=display_name,
             provider="gemini",
-            description=full_description,
+            description=data.get("description"),
             owned_by="Google",
             context_window=data.get("inputTokenLimit"),
             max_output_tokens=data.get("outputTokenLimit"),
             input_modalities=input_modalities,
             output_modalities=output_modalities,
+            is_embedding=is_embedding,
         )
 
     async def get_models(self) -> list[ModelInfo]:

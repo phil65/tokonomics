@@ -54,13 +54,16 @@ class CohereProvider(ModelProvider):
             description.append("This is a fine-tuned model")
 
         description_str = "\n".join(description) if description else None
-
+        is_embedding = "embed" in data.get("endpoints", []) or "embed_image" in data.get(
+            "endpoints", []
+        )
         return ModelInfo(
             id=name,
             name=name,
             provider="cohere",
             description=description_str,
             context_window=context_window,
+            is_embedding=is_embedding,
             input_modalities=input_modalities,
         )
 

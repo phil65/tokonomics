@@ -39,6 +39,8 @@ class ModelInfo:
     """Maximum number of tokens that can be processed in one request."""
     is_deprecated: bool = False
     """Whether this model version is deprecated."""
+    is_embedding: bool = False
+    """Whether this model is primarily used for creating embeddings."""
     max_output_tokens: int | None = None
     """Maximum number of tokens the model can generate in a response."""
     input_modalities: set[Modality] = field(default_factory=lambda: {"text"})

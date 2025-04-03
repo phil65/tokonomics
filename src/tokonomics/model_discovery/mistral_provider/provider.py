@@ -6,7 +6,7 @@ import os
 from typing import Any
 
 from tokonomics.model_discovery.base import ModelProvider
-from tokonomics.model_discovery.model_info import ModelInfo
+from tokonomics.model_discovery.model_info import Modality, ModelInfo
 
 
 class MistralProvider(ModelProvider):
@@ -25,15 +25,39 @@ class MistralProvider(ModelProvider):
 
     def _parse_model(self, data: dict[str, Any]) -> ModelInfo:
         """Parse Mistral API response into ModelInfo."""
+        # Extract capabilities
+        capabilities = data.get("capabilities", {})
+
+        # Determine if model is an embedding model
+        is_embedding = False
+        model_id = str(data["id"]).lower()
+        model_name = str(data.get("name", data["id"])).lower()
+
+        if (
+            "embed" in model_id
+            or "embed" in model_name
+            or (
+                not capabilities.get("completion_chat", True)
+                and not capabilities.get("function_calling", True)
+            )
+        ):
+            is_embedding = True
+
+        # Determine input/output modalities
+        input_modalities: set[Modality] = {"text"}
+        if capabilities.get("vision"):
+            input_modalities.add("image")
+
         return ModelInfo(
             id=str(data["id"]),
             name=str(data.get("name", data["id"])),
             provider="mistral",
-            owned_by=str(data["owned_by"]),
+            owned_by=str(data.get("owned_by")),
             description=str(data.get("description")),
-            context_window=int(data["max_context_length"]),
-            # Model is deprecated if it has a deprecation date
+            context_window=int(data.get("max_context_length", 0)),
             is_deprecated=bool(data.get("deprecation")),
+            is_embedding=is_embedding,
+            input_modalities=input_modalities,
         )
 
 
