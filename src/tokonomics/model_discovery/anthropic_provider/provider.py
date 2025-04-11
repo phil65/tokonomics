@@ -12,11 +12,7 @@ from tokonomics.model_discovery.model_info import ModelInfo
 class AnthropicProvider(ModelProvider):
     """Anthropic API provider."""
 
-    def __init__(
-        self,
-        api_key: str | None = None,
-        version: str = "2023-06-01",
-    ):
+    def __init__(self, api_key: str | None = None, version: str = "2023-06-01"):
         super().__init__()
         api_key = api_key or os.environ.get("ANTHROPIC_API_KEY")
         assert api_key, "API key not found"
