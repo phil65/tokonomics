@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import Literal
+from typing import Any, Literal
 
 
 Modality = Literal["text", "image", "audio", "video"]
@@ -17,6 +17,18 @@ class ModelPricing:
     """Cost per token for prompt inputs."""
     completion: float | None = None
     """Cost per token for completion outputs."""
+    image: float | None = None
+    """Cost per image for input processing."""
+    request: float | None = None
+    """Cost per request."""
+    input_cache_read: float | None = None
+    """Cost for reading from input cache."""
+    input_cache_write: float | None = None
+    """Cost for writing to input cache."""
+    web_search: float | None = None
+    """Cost for web search functionality."""
+    internal_reasoning: float | None = None
+    """Cost for internal reasoning functionality."""
 
 
 @dataclass
@@ -49,6 +61,8 @@ class ModelInfo:
     """Supported output modalities (text, image, audio, video, etc.)."""
     is_free: bool = False
     """Whether this model is free to use."""
+    metadata: dict[str, Any] = field(default_factory=dict)
+    """Provider-specific metadata that doesn't fit in standard fields."""
 
     @property
     def pydantic_ai_id(self) -> str:
@@ -107,6 +121,19 @@ class ModelInfo:
                 lines.append(f"Prompt cost: ${self.pricing.prompt:.6f}/token")
             if self.pricing.completion is not None:
                 lines.append(f"Completion cost: ${self.pricing.completion:.6f}/token")
+            if self.pricing.image is not None and self.pricing.image > 0:
+                lines.append(f"Image cost: ${self.pricing.image:.6f}/image")
+            if self.pricing.request is not None and self.pricing.request > 0:
+                lines.append(f"Request cost: ${self.pricing.request:.6f}/request")
+            if self.pricing.web_search is not None and self.pricing.web_search > 0:
+                lines.append(f"Web search cost: ${self.pricing.web_search:.6f}")
+            if (
+                self.pricing.internal_reasoning is not None
+                and self.pricing.internal_reasoning > 0
+            ):
+                lines.append(
+                    f"Internal reasoning cost: ${self.pricing.internal_reasoning:.6f}"
+                )
 
         if self.input_modalities and self.input_modalities != {"text"}:
             lines.append(f"Input modalities: {', '.join(self.input_modalities)}")
@@ -120,5 +147,30 @@ class ModelInfo:
 
         if self.is_deprecated:
             lines.append("\n⚠️ This model is deprecated")
+
+        # Add any relevant metadata
+        if self.metadata and any(self.metadata.values()):
+            lines.append("\nAdditional Information:")
+            for key, value in self.metadata.items():
+                if key == "supported_parameters" and value:
+                    lines.append(
+                        f"- Supported parameters: {', '.join(str(v) for v in value)}"
+                    )
+                elif key == "hugging_face_id" and value:
+                    lines.append(f"- HuggingFace ID: {value}")
+                elif key == "tokenizer" and value:
+                    lines.append(f"- Tokenizer: {value}")
+                elif key == "is_moderated" and value:
+                    lines.append(f"- Moderated: {value}")
+                elif key == "created_timestamp" and value:
+                    from datetime import datetime
+
+                    timestamp = datetime.fromtimestamp(value).strftime("%Y-%m-%d")
+                    lines.append(f"- Created: {timestamp}")
+                elif isinstance(value, list | set) and value:
+                    vals = ", ".join(str(v) for v in value)
+                    lines.append(f"- {key.replace('_', ' ').title()}: {vals}")
+                elif value:
+                    lines.append(f"- {key.replace('_', ' ').title()}: {value}")
 
         return "\n".join(lines)
