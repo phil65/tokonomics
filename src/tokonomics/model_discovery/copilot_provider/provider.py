@@ -34,7 +34,7 @@ class CopilotProvider(ModelProvider):
 
         # Extract context window, input and output tokens
         context_window = limits.get("max_context_window_tokens")
-        _max_input_tokens = limits.get("max_prompt_tokens")
+        _max_input_tokens = limits.get("max_input_tokens")
         max_output_tokens = limits.get("max_output_tokens")
 
         # Determine modalities

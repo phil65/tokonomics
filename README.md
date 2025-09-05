@@ -59,8 +59,8 @@ async def main():
     # Calculate cost with token counts
     costs = await calculate_token_cost(
         model="gpt-4",
-        prompt_tokens=100,    # tokens used in the prompt
-        completion_tokens=50,  # tokens used in the completion
+        input_tokens=100,    # tokens used in the prompt
+        output_tokens=50,  # tokens used in the completion
     )
 
     if costs:

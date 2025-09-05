@@ -174,8 +174,8 @@ async def get_model_costs(
 
 async def calculate_token_cost(
     model: str,
-    prompt_tokens: int | None,
-    completion_tokens: int | None,
+    input_tokens: int | None,
+    output_tokens: int | None,
     *,
     cache_timeout: int = _CACHE_TIMEOUT,
 ) -> TokenCosts | None:
@@ -187,8 +187,8 @@ async def calculate_token_cost(
 
     Args:
         model: Name of the model used (e.g. "gpt-4", "openai:gpt-3.5-turbo")
-        prompt_tokens: Number of tokens in the prompt/input, or None
-        completion_tokens: Number of tokens in the completion/output, or None
+        input_tokens: Number of tokens in the prompt/input, or None
+        output_tokens: Number of tokens in the completion/output, or None
         cache_timeout: Number of seconds to keep prices in cache (default: 24 hours)
 
     Returns:
@@ -200,8 +200,8 @@ async def calculate_token_cost(
         return None
 
     # Convert None values to 0
-    prompt_count = prompt_tokens or 0
-    completion_count = completion_tokens or 0
+    prompt_count = input_tokens or 0
+    completion_count = output_tokens or 0
 
     prompt_cost = prompt_count * costs["input_cost_per_token"]
     completion_cost = completion_count * costs["output_cost_per_token"]

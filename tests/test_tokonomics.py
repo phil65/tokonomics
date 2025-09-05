@@ -96,8 +96,8 @@ async def test_calculate_token_cost_success(mock_litellm_api):
     """Test successful token cost calculation."""
     costs = await calculate_token_cost(
         model="gpt-4",
-        prompt_tokens=10,
-        completion_tokens=20,
+        input_tokens=10,
+        output_tokens=20,
         cache_timeout=1,
     )
     assert costs is not None
@@ -111,8 +111,8 @@ async def test_calculate_token_cost_with_none(mock_litellm_api):
     """Test token cost calculation with None values."""
     costs = await calculate_token_cost(
         model="gpt-4",
-        prompt_tokens=None,
-        completion_tokens=20,
+        input_tokens=None,
+        output_tokens=20,
         cache_timeout=1,
     )
     assert costs is not None
@@ -126,8 +126,8 @@ async def test_calculate_token_cost_unknown_model(mock_litellm_api):
     """Test token cost calculation with unknown model."""
     costs = await calculate_token_cost(
         model="unknown-model",
-        prompt_tokens=10,
-        completion_tokens=20,
+        input_tokens=10,
+        output_tokens=20,
         cache_timeout=1,
     )
     assert costs is None

@@ -21,9 +21,9 @@ class Usage(Protocol):
 
     total_tokens: int | None
     """Total number of tokens used"""
-    request_tokens: int | None
+    input_tokens: int | None
     """Number of tokens in the request/prompt"""
-    response_tokens: int | None
+    output_tokens: int | None
     """Number of tokens in the response/completion"""
 
 
@@ -67,7 +67,7 @@ async def calculate_pydantic_cost(
 
     return await calculate_token_cost(
         model=model,
-        prompt_tokens=usage.request_tokens,
-        completion_tokens=usage.response_tokens,
+        input_tokens=usage.input_tokens,
+        output_tokens=usage.output_tokens,
         cache_timeout=cache_timeout,
     )
