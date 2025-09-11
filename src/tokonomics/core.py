@@ -32,8 +32,10 @@ def reset_cache() -> None:
     _cost_cache.clear()
 
 
-def _is_numeric(value: str | int | float) -> bool:  # noqa: PYI041
+def _is_numeric(value: str | int | float | None) -> bool:  # noqa: PYI041
     """Check if a value can be converted to a number."""
+    if value is None:
+        return False
     if isinstance(value, int | float):
         return True
     if not isinstance(value, str):
@@ -44,6 +46,20 @@ def _is_numeric(value: str | int | float) -> bool:  # noqa: PYI041
         return False
     else:
         return True
+
+
+def _safe_numeric_convert(value: Any) -> float:
+    """Safely convert a value to float, returning 0 if not possible."""
+    if value is None:
+        return 0.0
+    if isinstance(value, (int, float)):
+        return float(value)
+    if isinstance(value, str):
+        try:
+            return float(value)
+        except ValueError:
+            return 0.0
+    return 0.0
 
 
 def find_litellm_model_name(model: str) -> str | None:
@@ -200,21 +216,21 @@ async def calculate_token_cost(
         return None
 
     # Convert None values to 0
-    prompt_count = input_tokens or 0
-    completion_count = output_tokens or 0
+    input_count = input_tokens or 0
+    output_count = output_tokens or 0
 
-    prompt_cost = prompt_count * costs["input_cost_per_token"]
-    completion_cost = completion_count * costs["output_cost_per_token"]
+    input_cost = input_count * costs["input_cost_per_token"]
+    output_cost = output_count * costs["output_cost_per_token"]
 
     token_costs = TokenCosts(
-        prompt_cost=float(prompt_cost),
-        completion_cost=float(completion_cost),
+        input_cost=float(input_cost),
+        output_cost=float(output_cost),
     )
 
     logger.debug(
         "Cost calculation - prompt: $%.6f, completion: $%.6f, total: $%.6f",
-        token_costs.prompt_cost,
-        token_costs.completion_cost,
+        token_costs.input_cost,
+        token_costs.output_cost,
         token_costs.total_cost,
     )
     return token_costs
@@ -267,9 +283,9 @@ async def get_model_limits(
                 continue
 
             # Now safe to convert to int
-            max_tokens = int(float(max_tokens_raw))
-            max_input = int(float(max_input_raw))
-            max_output = int(float(max_output_raw))
+            max_tokens = int(_safe_numeric_convert(max_tokens_raw))
+            max_input = int(_safe_numeric_convert(max_input_raw))
+            max_output = int(_safe_numeric_convert(max_output_raw))
 
             if any((max_tokens, max_input, max_output)):
                 all_limits[name.lower()] = TokenLimits(
@@ -391,13 +407,9 @@ async def get_model_capabilities(
 
             # Convert token values to integers, defaulting to 0
             try:
-                max_tokens = (
-                    int(float(max_tokens_raw)) if _is_numeric(max_tokens_raw) else 0
-                )
-                max_input = int(float(max_input_raw)) if _is_numeric(max_input_raw) else 0
-                max_output = (
-                    int(float(max_output_raw)) if _is_numeric(max_output_raw) else 0
-                )
+                max_tokens = int(_safe_numeric_convert(max_tokens_raw))
+                max_input = int(_safe_numeric_convert(max_input_raw))
+                max_output = int(_safe_numeric_convert(max_output_raw))
             except (ValueError, TypeError):
                 max_tokens = max_input = max_output = 0
 

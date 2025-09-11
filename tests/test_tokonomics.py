@@ -7,6 +7,7 @@ import pytest
 import respx
 
 from tokonomics import calculate_token_cost, core, get_model_costs
+import tokonomics.core
 from tokonomics.core import get_model_limits
 
 
@@ -29,8 +30,6 @@ SAMPLE_PRICING_DATA = {
 @pytest.fixture(autouse=True)
 def setup_teardown():
     """Setup and teardown for each test."""
-    import tokonomics.core
-
     # Disable caching during tests
     tokonomics.core._TESTING = True
 
@@ -101,8 +100,8 @@ async def test_calculate_token_cost_success(mock_litellm_api):
         cache_timeout=1,
     )
     assert costs is not None
-    assert costs.prompt_cost == 0.3  # 10 tokens * 0.03  # noqa: PLR2004
-    assert costs.completion_cost == 1.2  # 20 tokens * 0.06  # noqa: PLR2004
+    assert costs.input_cost == 0.3  # 10 tokens * 0.03  # noqa: PLR2004
+    assert costs.output_cost == 1.2  # 20 tokens * 0.06  # noqa: PLR2004
     assert costs.total_cost == 1.5  # 0.3 + 1.2  # noqa: PLR2004
 
 
@@ -116,8 +115,8 @@ async def test_calculate_token_cost_with_none(mock_litellm_api):
         cache_timeout=1,
     )
     assert costs is not None
-    assert costs.prompt_cost == 0.0
-    assert costs.completion_cost == 1.2  # 20 tokens * 0.06  # noqa: PLR2004
+    assert costs.input_cost == 0.0
+    assert costs.output_cost == 1.2  # 20 tokens * 0.06  # noqa: PLR2004
     assert costs.total_cost == 1.2  # noqa: PLR2004
 
 

@@ -28,15 +28,25 @@ class TokenUsage(TypedDict):
 class TokenCosts:
     """Detailed breakdown of token costs."""
 
-    prompt_cost: float
+    input_cost: float
     """Cost for prompt tokens"""
-    completion_cost: float
+    output_cost: float
     """Cost for completion tokens"""
+
+    @property
+    def prompt_cost(self) -> float:
+        """Calculate total cost as sum of prompt and completion costs."""
+        return self.input_cost
+
+    @property
+    def completion_cost(self) -> float:
+        """Calculate total cost as sum of prompt and completion costs."""
+        return self.output_cost
 
     @property
     def total_cost(self) -> float:
         """Calculate total cost as sum of prompt and completion costs."""
-        return self.prompt_cost + self.completion_cost
+        return self.input_cost + self.output_cost
 
 
 @dataclass(frozen=True, slots=True)

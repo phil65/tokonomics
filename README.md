@@ -64,8 +64,8 @@ async def main():
     )
 
     if costs:
-        print(f"Prompt cost: ${costs.prompt_cost:.6f}")
-        print(f"Completion cost: ${costs.completion_cost:.6f}")
+        print(f"Prompt cost: ${costs.input_cost:.6f}")
+        print(f"Completion cost: ${costs.output_cost:.6f}")
         print(f"Total cost: ${costs.total_cost:.6f}")
     else:
         print("Could not determine cost for model")
@@ -126,8 +126,8 @@ costs = await calculate_pydantic_cost(
 )
 
 if costs:
-    print(f"Prompt cost: ${costs.prompt_cost:.6f}")
-    print(f"Completion cost: ${costs.completion_cost:.6f}")
+    print(f"Prompt cost: ${costs.input_cost:.6f}")
+    print(f"Completion cost: ${costs.output_cost:.6f}")
     print(f"Total cost: ${costs.total_cost:.6f}")
 ```
 
