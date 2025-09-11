@@ -45,7 +45,7 @@ def count_tokens(
     """
     # Try tiktoken first
     if has_library("tiktoken"):
-        import tiktoken
+        import tiktoken  # pyright: ignore[reportMissingImports]
 
         try:
             encoding = tiktoken.encoding_for_model(model or "gpt-3.5-turbo")
@@ -59,7 +59,7 @@ def count_tokens(
 
     # Try transformers as fallback
     if has_library("transformers"):
-        from transformers import AutoTokenizer
+        from transformers import AutoTokenizer  # pyright: ignore[reportMissingImports]
 
         tokenizer = AutoTokenizer.from_pretrained("facebook/opt-125m")
 
