@@ -19,12 +19,15 @@ logger = logging.getLogger(__name__)
 class Usage(Protocol):
     """Protocol matching pydantic-ai's Usage object structure."""
 
-    total_tokens: int | None
-    """Total number of tokens used"""
-    input_tokens: int | None
+    input_tokens: int
     """Number of tokens in the request/prompt"""
-    output_tokens: int | None
+    output_tokens: int
     """Number of tokens in the response/completion"""
+
+    @property
+    def total_tokens(self) -> int:
+        """Total number of tokens used."""
+        ...
 
 
 @overload
