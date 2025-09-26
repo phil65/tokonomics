@@ -18,6 +18,7 @@ from tokonomics.model_discovery.cerebras_provider import CerebrasProvider
 from tokonomics.model_discovery.copilot_provider import CopilotProvider, token_manager
 from tokonomics.model_discovery.gemini_provider import GeminiProvider
 from tokonomics.model_discovery.cohere_provider import CohereProvider
+from tokonomics.model_discovery.deepseek_provider import DeepSeekProvider
 
 
 if TYPE_CHECKING:
@@ -38,6 +39,7 @@ ProviderType = Literal[
     "cerebras",
     "gemini",
     "cohere",
+    "deepseek",
 ]
 
 
@@ -52,6 +54,7 @@ _PROVIDER_MAP: dict[ProviderType, type[ModelProvider]] = {
     "cerebras": CerebrasProvider,
     "gemini": GeminiProvider,
     "cohere": CohereProvider,
+    "deepseek": DeepSeekProvider,
 }
 
 
@@ -160,6 +163,7 @@ __all__ = [
     "CerebrasProvider",
     "CohereProvider",
     "CopilotProvider",
+    "DeepSeekProvider",
     "GeminiProvider",
     "GitHubProvider",
     "GroqProvider",
