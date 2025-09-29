@@ -19,6 +19,7 @@ from tokonomics.model_discovery.copilot_provider import CopilotProvider, token_m
 from tokonomics.model_discovery.gemini_provider import GeminiProvider
 from tokonomics.model_discovery.cohere_provider import CohereProvider
 from tokonomics.model_discovery.deepseek_provider import DeepSeekProvider
+from tokonomics.model_discovery.xai_provider import XAIProvider
 
 
 if TYPE_CHECKING:
@@ -40,6 +41,7 @@ ProviderType = Literal[
     "gemini",
     "cohere",
     "deepseek",
+    "xai",
 ]
 
 
@@ -55,6 +57,7 @@ _PROVIDER_MAP: dict[ProviderType, type[ModelProvider]] = {
     "gemini": GeminiProvider,
     "cohere": CohereProvider,
     "deepseek": DeepSeekProvider,
+    "xai": XAIProvider,
 }
 
 
@@ -174,6 +177,7 @@ __all__ = [
     "OpenAIProvider",
     "OpenRouterProvider",
     "ProviderType",
+    "XAIProvider",
     "get_all_models",
     "get_all_models_sync",
     "token_manager",
