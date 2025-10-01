@@ -14,13 +14,18 @@ class OpenRouterProvider(ModelProvider):
 
     def __init__(self, api_key: str | None = None):
         super().__init__()
+        self.api_key = api_key or os.environ.get("OPENROUTER_API_KEY")
         self.base_url = "https://openrouter.ai/api/v1"
         self.headers = {"HTTP-Referer": "https://github.com/phi-ai"}
 
-        if api_key := (api_key or os.environ.get("OPENROUTER_API_KEY")):
-            self.headers["Authorization"] = f"Bearer {api_key}"
+        if self.api_key:
+            self.headers["Authorization"] = f"Bearer {self.api_key}"
 
         self.params = {}
+
+    def is_available(self) -> bool:
+        """Check whether the provider is available for use."""
+        return bool(self.api_key)
 
     def _parse_model(self, data: dict[str, Any]) -> ModelInfo:
         """Parse OpenRouter API response into ModelInfo."""

@@ -26,6 +26,10 @@ class CopilotProvider(ModelProvider):
         self.base_url = self._token_manager._api_endpoint
         self.params = {}
 
+    def is_available(self) -> bool:
+        """Check whether the provider is available for use."""
+        return self._token_manager.is_available()
+
     def _parse_model(self, data: dict[str, Any]) -> ModelInfo:
         """Parse Copilot API response into ModelInfo."""
         # Extract capabilities and limits

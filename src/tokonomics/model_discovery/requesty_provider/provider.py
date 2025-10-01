@@ -14,13 +14,17 @@ class RequestyProvider(ModelProvider):
 
     def __init__(self, api_key: str | None = None):
         super().__init__()
-        api_key = api_key or os.environ.get("REQUESTY_API_KEY")
+        self.api_key = api_key or os.environ.get("REQUESTY_API_KEY")
 
         self.base_url = "https://router.requesty.ai/v1"
         self.headers = {}
-        if api_key:
-            self.headers["Authorization"] = f"Bearer {api_key}"
+        if self.api_key:
+            self.headers["Authorization"] = f"Bearer {self.api_key}"
         self.params = {}
+
+    def is_available(self) -> bool:
+        """Check whether the provider is available for use."""
+        return bool(self.api_key)
 
     def _parse_model(self, data: dict[str, Any]) -> ModelInfo:
         """Parse Requesty API response into ModelInfo."""

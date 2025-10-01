@@ -112,6 +112,10 @@ class CopilotTokenManager:
         expires_at = self._token_expires_at.isoformat()
         logger.debug("Copilot token refreshed, valid until: %s", expires_at)
 
+    def is_available(self) -> bool:
+        """Check whether the token manager is available for use."""
+        return bool(self._github_oauth_token)
+
     async def generate_headers(self) -> dict[str, str]:
         """Generate headers for GitHub Copilot API requests."""
         return {

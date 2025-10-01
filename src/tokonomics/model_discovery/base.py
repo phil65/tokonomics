@@ -19,6 +19,10 @@ class ModelProvider(ABC):
         self.params: dict[str, Any] = {}
 
     @abstractmethod
+    def is_available(self) -> bool:
+        """Check whether the provider is available for use."""
+
+    @abstractmethod
     def _parse_model(self, data: dict[str, Any]) -> ModelInfo:
         """Parse provider-specific API response into ModelInfo."""
 

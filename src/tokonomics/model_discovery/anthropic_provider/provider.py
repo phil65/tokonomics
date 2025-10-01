@@ -25,6 +25,10 @@ class AnthropicProvider(ModelProvider):
         self.headers = {"x-api-key": api_key, "anthropic-version": version}
         self.params = {"limit": 1000}
 
+    def is_available(self) -> bool:
+        """Check whether the provider is available for use."""
+        return bool(self.api_key)
+
     def _parse_model(self, data: dict[str, Any]) -> ModelInfo:
         """Parse Anthropic API response into ModelInfo."""
         return ModelInfo(

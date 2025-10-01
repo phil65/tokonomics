@@ -49,6 +49,10 @@ class GitHubProvider(ModelProvider):
             "Authorization": f"Bearer {self.token}",
         }
 
+    def is_available(self) -> bool:
+        """Check whether the provider is available for use."""
+        return bool(self.token)
+
     async def _fetch_models(self, is_free: bool) -> list[ModelInfo]:
         """Fetch models with specific freePlayground value."""
         from anyenv import post

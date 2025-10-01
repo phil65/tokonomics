@@ -18,14 +18,18 @@ class CerebrasProvider(ModelProvider):
 
     def __init__(self, api_key: str | None = None):
         super().__init__()
-        api_key = api_key or os.environ.get("CEREBRAS_API_KEY")
-        if not api_key:
+        self.api_key = api_key or os.environ.get("CEREBRAS_API_KEY")
+        if not self.api_key:
             msg = "Cerebras API key not found in parameters or CEREBRAS_API_KEY env var"
             raise RuntimeError(msg)
 
         self.base_url = "https://api.cerebras.ai/v1"
-        self.headers = {"Authorization": f"Bearer {api_key}"}
+        self.headers = {"Authorization": f"Bearer {self.api_key}"}
         self.params = {}
+
+    def is_available(self) -> bool:
+        """Check whether the provider is available for use."""
+        return bool(self.api_key)
 
     def _parse_model(self, data: dict[str, Any]) -> ModelInfo:
         """Parse Cerebras API response into ModelInfo."""

@@ -14,14 +14,18 @@ class MistralProvider(ModelProvider):
 
     def __init__(self, api_key: str | None = None):
         super().__init__()
-        api_key = api_key or os.environ.get("MISTRAL_API_KEY")
-        if not api_key:
+        self.api_key = api_key or os.environ.get("MISTRAL_API_KEY")
+        if not self.api_key:
             msg = "Mistral API key not found in parameters or MISTRAL_API_KEY env var"
             raise RuntimeError(msg)
 
         self.base_url = "https://api.mistral.ai/v1"
-        self.headers = {"Authorization": f"Bearer {api_key}"}
+        self.headers = {"Authorization": f"Bearer {self.api_key}"}
         self.params = {}
+
+    def is_available(self) -> bool:
+        """Check whether the provider is available for use."""
+        return bool(self.api_key)
 
     def _parse_model(self, data: dict[str, Any]) -> ModelInfo:
         """Parse Mistral API response into ModelInfo."""
