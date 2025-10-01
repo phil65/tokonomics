@@ -79,7 +79,7 @@ def get_all_models_sync(
     """Fetch models from selected providers in parallel using threads.
 
     Args:
-        providers: Sequence of provider names to use. Defaults to all providers.
+        providers: Sequence of provider names to use. Defaults to available providers.
         max_workers: Maximum number of worker threads.
                      Defaults to min(32, os.cpu_count() * 5)
         include_deprecated: Whether to include deprecated models. Defaults to False.
@@ -89,7 +89,19 @@ def get_all_models_sync(
     """
     import concurrent.futures
 
-    selected_providers = providers or list(_PROVIDER_MAP.keys())
+    if providers is not None:
+        selected_providers = providers
+    else:
+        # Only use available providers when no specific providers are requested
+        selected_providers = []
+        for provider_name, provider_class in _PROVIDER_MAP.items():
+            try:
+                provider = provider_class()
+                if provider.is_available():
+                    selected_providers.append(provider_name)
+            except Exception:  # noqa: BLE001
+                # Provider initialization failed, skip it
+                continue
     all_models: list[ModelInfo] = []
 
     def fetch_provider_models(provider_name: ProviderType) -> list[ModelInfo] | None:
@@ -107,20 +119,21 @@ def get_all_models_sync(
         else:
             return models
 
-    # Use ThreadPoolExecutor for parallel execution
     with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
-        # Submit all tasks
-        future_to_provider = {
-            executor.submit(fetch_provider_models, provider): provider
-            for provider in selected_providers
-        }
-
-        # Collect results as they complete
-        for future in concurrent.futures.as_completed(future_to_provider):
+        # Submit all tasks and collect results as they complete
+        fut = {executor.submit(fetch_provider_models, p): p for p in selected_providers}
+        for future in concurrent.futures.as_completed(fut):
             provider_models = future.result()
             if provider_models:
                 all_models.extend(provider_models)
 
+    successful_providers = {model.provider for model in all_models}
+    logger.info(
+        "Fetched %d models from %d providers: %s",
+        len(all_models),
+        len(successful_providers),
+        ", ".join(sorted(successful_providers)),
+    )
     return all_models
 
 
@@ -132,13 +145,25 @@ async def get_all_models(
     """Fetch models from selected providers in parallel.
 
     Args:
-        providers: Sequence of provider names to use. Defaults to all providers.
+        providers: Sequence of provider names to use. Defaults to available providers.
         include_deprecated: Whether to include deprecated models. Defaults to False.
 
     Returns:
         list[ModelInfo]: Combined list of models from all providers.
     """
-    selected_providers = providers or list(_PROVIDER_MAP.keys())
+    if providers is not None:
+        selected_providers = providers
+    else:
+        # Only use available providers when no specific providers are requested
+        selected_providers = []
+        for provider_name, provider_class in _PROVIDER_MAP.items():
+            try:
+                provider = provider_class()
+                if provider.is_available():
+                    selected_providers.append(provider_name)
+            except Exception:  # noqa: BLE001
+                # Provider initialization failed, skip it
+                continue
     all_models: list[ModelInfo] = []
 
     async def fetch_provider_models(
@@ -167,6 +192,13 @@ async def get_all_models(
         if provider_models:
             all_models.extend(provider_models)
 
+    successful_providers = {model.provider for model in all_models}
+    logger.info(
+        "Fetched %d models from %d providers: %s",
+        len(all_models),
+        len(successful_providers),
+        ", ".join(sorted(successful_providers)),
+    )
     return all_models
 
 
