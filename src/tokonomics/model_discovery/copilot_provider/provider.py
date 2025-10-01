@@ -4,11 +4,15 @@ from __future__ import annotations
 
 from datetime import datetime
 import logging
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from tokonomics.model_discovery.base import ModelProvider
 from tokonomics.model_discovery.copilot_provider.token_manager import token_manager
-from tokonomics.model_discovery.model_info import Modality, ModelInfo
+from tokonomics.model_discovery.model_info import ModelInfo
+
+
+if TYPE_CHECKING:
+    from tokonomics.model_discovery.model_info import Modality
 
 
 logger = logging.getLogger(__name__)

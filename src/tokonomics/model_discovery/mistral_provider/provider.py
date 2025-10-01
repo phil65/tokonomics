@@ -3,10 +3,14 @@
 from __future__ import annotations
 
 import os
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from tokonomics.model_discovery.base import ModelProvider
-from tokonomics.model_discovery.model_info import Modality, ModelInfo
+from tokonomics.model_discovery.model_info import ModelInfo
+
+
+if TYPE_CHECKING:
+    from tokonomics.model_discovery.model_info import Modality
 
 
 class MistralProvider(ModelProvider):
