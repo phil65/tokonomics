@@ -22,6 +22,7 @@ from tokonomics.model_discovery.deepseek_provider import DeepSeekProvider
 from tokonomics.model_discovery.requesty_provider import RequestyProvider
 from tokonomics.model_discovery.xai_provider import XAIProvider
 from tokonomics.model_discovery.novita_provider import NovitaProvider
+from tokonomics.model_discovery.vercel_gateway_provider import VercelGatewayProvider
 
 
 if TYPE_CHECKING:
@@ -46,6 +47,7 @@ ProviderType = Literal[
     "requesty",
     "xai",
     "novita",
+    "vercel-gateway",
 ]
 
 
@@ -64,6 +66,7 @@ _PROVIDER_MAP: dict[ProviderType, type[ModelProvider]] = {
     "requesty": RequestyProvider,
     "xai": XAIProvider,
     "novita": NovitaProvider,
+    "vercel-gateway": VercelGatewayProvider,
 }
 
 
@@ -185,6 +188,7 @@ __all__ = [
     "OpenRouterProvider",
     "ProviderType",
     "RequestyProvider",
+    "VercelGatewayProvider",
     "XAIProvider",
     "get_all_models",
     "get_all_models_sync",
