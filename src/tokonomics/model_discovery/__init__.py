@@ -21,6 +21,7 @@ from tokonomics.model_discovery.cohere_provider import CohereProvider
 from tokonomics.model_discovery.deepseek_provider import DeepSeekProvider
 from tokonomics.model_discovery.requesty_provider import RequestyProvider
 from tokonomics.model_discovery.xai_provider import XAIProvider
+from tokonomics.model_discovery.novita_provider import NovitaProvider
 
 
 if TYPE_CHECKING:
@@ -44,6 +45,7 @@ ProviderType = Literal[
     "deepseek",
     "requesty",
     "xai",
+    "novita",
 ]
 
 
@@ -61,6 +63,7 @@ _PROVIDER_MAP: dict[ProviderType, type[ModelProvider]] = {
     "deepseek": DeepSeekProvider,
     "requesty": RequestyProvider,
     "xai": XAIProvider,
+    "novita": NovitaProvider,
 }
 
 
@@ -177,6 +180,7 @@ __all__ = [
     "ModelInfo",
     "ModelPricing",
     "ModelProvider",
+    "NovitaProvider",
     "OpenAIProvider",
     "OpenRouterProvider",
     "ProviderType",
