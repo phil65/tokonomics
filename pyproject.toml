@@ -104,6 +104,7 @@ extend-exclude = ['docs']
 target-version = "py312"
 
 [tool.ruff.lint]
+future-annotations = true
 select = [
     "A", # Flake8-builtins
     # "ANN",  # Flake8-Annotations
@@ -205,6 +206,9 @@ ignore = [
 [tool.ruff.lint.flake8-quotes]
 docstring-quotes = "double"
 
+[tool.ruff.lint.flake8-type-checking]
+runtime-evaluated-base-classes = ["pydantic.BaseModel", "sqlalchemy.orm.DeclarativeBase", "schemez.Schema"]
+
 [tool.ruff.format]
 # Enable preview style formatting.
 preview = true
@@ -219,6 +223,9 @@ combine-as-imports = true
 [tool.ruff.lint.per-file-ignores]
 "__init__.py" = ["E402", "I001"]
 "scripts/*" = ["INP001"]
+
+[tool.ty.environment]
+python-version = "3.12"
 
 [tool.pyright]
 venvPath = "."

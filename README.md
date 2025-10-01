@@ -2,8 +2,6 @@
 
 [![PyPI License](https://img.shields.io/pypi/l/tokonomics.svg)](https://pypi.org/project/tokonomics/)
 [![Package status](https://img.shields.io/pypi/status/tokonomics.svg)](https://pypi.org/project/tokonomics/)
-[![Daily downloads](https://img.shields.io/pypi/dd/tokonomics.svg)](https://pypi.org/project/tokonomics/)
-[![Weekly downloads](https://img.shields.io/pypi/dw/tokonomics.svg)](https://pypi.org/project/tokonomics/)
 [![Monthly downloads](https://img.shields.io/pypi/dm/tokonomics.svg)](https://pypi.org/project/tokonomics/)
 [![Distribution format](https://img.shields.io/pypi/format/tokonomics.svg)](https://pypi.org/project/tokonomics/)
 [![Wheel availability](https://img.shields.io/pypi/wheel/tokonomics.svg)](https://pypi.org/project/tokonomics/)
@@ -21,11 +19,8 @@
 [![Github last commit](https://img.shields.io/github/last-commit/phil65/tokonomics)](https://github.com/phil65/tokonomics/commits)
 [![Github release date](https://img.shields.io/github/release-date/phil65/tokonomics)](https://github.com/phil65/tokonomics/releases)
 [![Github language count](https://img.shields.io/github/languages/count/phil65/tokonomics)](https://github.com/phil65/tokonomics)
-[![Github commits this week](https://img.shields.io/github/commit-activity/w/phil65/tokonomics)](https://github.com/phil65/tokonomics)
 [![Github commits this month](https://img.shields.io/github/commit-activity/m/phil65/tokonomics)](https://github.com/phil65/tokonomics)
-[![Github commits this year](https://img.shields.io/github/commit-activity/y/phil65/tokonomics)](https://github.com/phil65/tokonomics)
 [![Package status](https://codecov.io/gh/phil65/tokonomics/branch/main/graph/badge.svg)](https://codecov.io/gh/phil65/tokonomics/)
-[![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
 [![PyUp](https://pyup.io/repos/github/phil65/tokonomics/shield.svg)](https://pyup.io/repos/github/phil65/tokonomics/)
 
 [Read the documentation!](https://phil65.github.io/tokonomics/)
