@@ -30,11 +30,9 @@ class ModelProvider(ABC):
         """Fetch available models from the provider asynchronously."""
         from anyenv import HttpError, get_json
 
-        url = f"{self.base_url}/models"
-
         try:
-            data: dict[str, Any] = await get_json(
-                url,
+            data = await get_json(
+                f"{self.base_url}/models",
                 headers=self.headers,
                 params=self.params,
                 cache=True,
