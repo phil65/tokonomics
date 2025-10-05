@@ -10,7 +10,6 @@ from tokonomics.core import TokenLimits, get_model_costs, get_model_limits
 from tokonomics.toko_types import ModelCosts
 
 
-@pytest.mark.asyncio
 async def test_get_model_limits_handles_non_numeric_values(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -61,7 +60,6 @@ async def test_get_model_limits_handles_non_numeric_values(
         )
 
 
-@pytest.mark.asyncio
 async def test_get_model_costs_handles_non_numeric_values(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:

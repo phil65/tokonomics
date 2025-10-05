@@ -52,7 +52,6 @@ def mock_litellm_api():
         yield respx_mock
 
 
-@pytest.mark.asyncio
 async def test_get_model_costs_success(mock_litellm_api):
     """Test successful model cost retrieval."""
     costs = await get_model_costs("gpt-4", cache_timeout=1)
@@ -61,7 +60,6 @@ async def test_get_model_costs_success(mock_litellm_api):
     assert costs["output_cost_per_token"] == 0.06  # noqa: PLR2004
 
 
-@pytest.mark.asyncio
 async def test_get_model_costs_case_insensitive(mock_litellm_api):
     """Test that model name matching is case insensitive."""
     # First call to populate cache
@@ -72,7 +70,6 @@ async def test_get_model_costs_case_insensitive(mock_litellm_api):
     assert costs["input_cost_per_token"] == 0.03  # noqa: PLR2004
 
 
-@pytest.mark.asyncio
 async def test_get_model_costs_provider_format(mock_litellm_api):
     """Test that provider:model format works."""
     # First call to populate cache
@@ -83,14 +80,12 @@ async def test_get_model_costs_provider_format(mock_litellm_api):
     assert costs["input_cost_per_token"] == 0.03  # noqa: PLR2004
 
 
-@pytest.mark.asyncio
 async def test_get_model_costs_unknown_model(mock_litellm_api):
     """Test behavior with unknown model."""
     costs = await get_model_costs("unknown-model", cache_timeout=1)
     assert costs is None
 
 
-@pytest.mark.asyncio
 async def test_calculate_token_cost_success(mock_litellm_api):
     """Test successful token cost calculation."""
     costs = await calculate_token_cost(
@@ -105,7 +100,6 @@ async def test_calculate_token_cost_success(mock_litellm_api):
     assert costs.total_cost == 1.5  # 0.3 + 1.2  # noqa: PLR2004
 
 
-@pytest.mark.asyncio
 async def test_calculate_token_cost_with_none(mock_litellm_api):
     """Test token cost calculation with None values."""
     costs = await calculate_token_cost(
@@ -120,7 +114,6 @@ async def test_calculate_token_cost_with_none(mock_litellm_api):
     assert costs.total_cost == 1.2  # noqa: PLR2004
 
 
-@pytest.mark.asyncio
 async def test_calculate_token_cost_unknown_model(mock_litellm_api):
     """Test token cost calculation with unknown model."""
     costs = await calculate_token_cost(
@@ -132,7 +125,6 @@ async def test_calculate_token_cost_unknown_model(mock_litellm_api):
     assert costs is None
 
 
-@pytest.mark.asyncio
 async def test_api_error(mock_litellm_api):
     """Test behavior when API request fails."""
     mock_litellm_api.get(core.LITELLM_PRICES_URL).mock(return_value=httpx.Response(500))
@@ -140,7 +132,6 @@ async def test_api_error(mock_litellm_api):
     assert costs is None
 
 
-@pytest.mark.asyncio
 async def test_get_model_limits_success(mock_litellm_api):
     """Test successful model limit retrieval."""
     limits = await get_model_limits("gpt-4", cache_timeout=1)
@@ -150,7 +141,6 @@ async def test_get_model_limits_success(mock_litellm_api):
     assert limits.output_tokens == 2048  # noqa: PLR2004
 
 
-@pytest.mark.asyncio
 async def test_get_model_limits_fallback(mock_litellm_api):
     """Test limits fallback to max_tokens when specific limits aren't provided."""
     limits = await get_model_limits("gpt-3.5-turbo", cache_timeout=1)

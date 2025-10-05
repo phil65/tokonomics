@@ -1,12 +1,9 @@
 from __future__ import annotations
 
-import pytest
-
 import tokonomics.core
 from tokonomics.core import get_model_capabilities
 
 
-@pytest.mark.asyncio
 async def test_get_model_capabilities():
     """Test model capabilities fetching."""
     # Test with a well-known model that should have stable capabilities
