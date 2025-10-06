@@ -1,10 +1,17 @@
-"""Tokonomics Python library."""
+"""Tokonomics: Calcuate costs for LLM Usage based on token count"""
 
 from __future__ import annotations
 
 from importlib.metadata import version
 
 __version__ = version("tokonomics")
+__title__ = "Tokonomics"
+__description__ = "Calcuate costs for LLM Usage based on token count"
+__author__ = "Philipp Temminghoff"
+__author_email__ = "philipptemminghoff@googlemail.com"
+__copyright__ = "Copyright (c) 2024 Philipp Temminghoff"
+__license__ = "MIT"
+__url__ = "https://github.com/phil65/tokonomics"
 
 from tokonomics.core import (
     get_model_costs,
