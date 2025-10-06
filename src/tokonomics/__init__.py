@@ -2,6 +2,9 @@
 
 from __future__ import annotations
 
+from importlib.metadata import version
+
+__version__ = version("tokonomics")
 
 from tokonomics.core import (
     get_model_costs,
@@ -27,9 +30,10 @@ from tokonomics.model_discovery import (
 from tokonomics.model_discovery.copilot_provider import CopilotTokenManager
 from tokonomics.token_count import count_tokens
 
-__version__ = "0.4.2"
+
 
 __all__ = [
+    "__version__",
     "AnthropicProvider",
     "CopilotTokenManager",
     "GroqProvider",
