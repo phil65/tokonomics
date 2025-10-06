@@ -31,9 +31,7 @@ from tokonomics.model_discovery.copilot_provider import CopilotTokenManager
 from tokonomics.token_count import count_tokens
 
 
-
 __all__ = [
-    "__version__",
     "AnthropicProvider",
     "CopilotTokenManager",
     "GroqProvider",
@@ -47,6 +45,7 @@ __all__ = [
     "TokenCosts",
     "TokenLimits",
     "Usage",
+    "__version__",
     "calculate_pydantic_cost",
     "calculate_token_cost",
     "count_tokens",
