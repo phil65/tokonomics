@@ -2,17 +2,17 @@
 
 from __future__ import annotations
 
-import logging
 import pathlib
 from typing import Any, cast
 
 from anyenv import get_json
 from platformdirs import user_data_dir
 
+from tokonomics import log
 from tokonomics.toko_types import ModelCapabilities, ModelCosts, TokenCosts, TokenLimits
 
 
-logger = logging.getLogger(__name__)
+logger = log.get_logger(__name__)
 
 
 # Cache cost data persistently
@@ -75,24 +75,19 @@ def find_litellm_model_name(model: str) -> str | None:
         str | None: Matching LiteLLM model name if found in cache, None otherwise
     """
     logger.debug("Looking up model costs for: %s", model)
-
-    # Normalize case
     model = model.lower()
-
-    # First check direct match
     if model in _cost_cache:
         logger.debug("Found direct cache match for: %r", model)
         return model
 
-    # For provider:model format, try both variants
-    if ":" in model:
+    if ":" in model:  # For provider:model format, try both variants
         provider, model_name = model.split(":", 1)
-        # Try just model name (normalized)
-        model_name = model_name.lower()
+
+        model_name = model_name.lower()  # Try just model name (normalized)
         if _cost_cache.get(model_name) is not None:
             logger.debug("Found cache match for base name: %r", model_name)
             return model_name
-        # Try provider/model format (normalized)
+        # Try provider/model  (normalized)
         provider_format = f"{provider.lower()}/{model_name}"
         if _cost_cache.get(provider_format) is not None:
             logger.debug("Found cache match for provider format: %r", provider_format)
