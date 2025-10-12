@@ -6,6 +6,7 @@
 from __future__ import annotations
 
 import logging
+import os
 from typing import TYPE_CHECKING, Any, Literal
 
 from tokonomics.model_discovery.base import ModelProvider
@@ -85,7 +86,11 @@ class ModelsDevProvider(ModelProvider):
 
     def is_available(self) -> bool:
         """Check whether the provider is available for use."""
-        return True  # No API key required
+        if self.provider_filter == "anthropic":
+            return bool(os.environ.get("ANTHROPIC_API_KEY"))
+        if self.provider_filter == "openai":
+            return bool(os.environ.get("OPENAI_API_KEY"))
+        return True
 
     def _parse_model(self, data: dict[str, Any]) -> ModelInfo:
         """Parse models.dev API response into ModelInfo."""
