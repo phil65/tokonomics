@@ -84,7 +84,7 @@ class ModelsDevProvider(ModelProvider):
         self.params = {}
         self.provider_filter = provider
 
-    def is_available(self) -> bool:
+    def is_available(self) -> bool:  # noqa: PLR0911
         """Check whether the provider is available for use."""
         if self.provider_filter == "anthropic":
             return bool(os.environ.get("ANTHROPIC_API_KEY"))
@@ -106,6 +106,10 @@ class ModelsDevProvider(ModelProvider):
             return bool(os.environ.get("CORTECS_API_KEY"))
         if self.provider_filter == "xai":
             return bool(os.environ.get("XAI_API_KEY"))
+        if self.provider_filter == "azure":
+            return bool(os.environ.get("AZURE_OPENAI_API_KEY"))
+        if self.provider_filter == "fireworks-ai":
+            return bool(os.environ.get("FIREWORKS_API_KEY"))
         return True
 
     def _parse_model(self, data: dict[str, Any]) -> ModelInfo:
