@@ -30,6 +30,7 @@ ModelsDevProviderType = Literal[
     "cerebras",
     "chutes",
     "cloudflare-workers-ai",
+    "cohere",
     "cortecs",
     "deepinfra",
     "deepseek",

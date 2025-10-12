@@ -13,20 +13,26 @@ from tokonomics.model_discovery.groq_provider import GroqProvider
 from tokonomics.model_discovery.mistral_provider import MistralProvider
 from tokonomics.model_discovery.openrouter_provider import OpenRouterProvider
 from tokonomics.model_discovery.github_provider import GitHubProvider
-from tokonomics.model_discovery.cerebras_provider import CerebrasProvider
 from tokonomics.model_discovery.copilot_provider import CopilotProvider, token_manager
 from tokonomics.model_discovery.gemini_provider import GeminiProvider
-from tokonomics.model_discovery.cohere_provider import CohereProvider
 from tokonomics.model_discovery.deepseek_provider import DeepSeekProvider
 from tokonomics.model_discovery.requesty_provider import RequestyProvider
 from tokonomics.model_discovery.xai_provider import XAIProvider
 from tokonomics.model_discovery.novita_provider import NovitaProvider
 from tokonomics.model_discovery.vercel_gateway_provider import VercelGatewayProvider
 from tokonomics.model_discovery.modelsdev_provider import ModelsDevProvider
+# from tokonomics.model_discovery.cerebras_provider import CerebrasProvider
+# from tokonomics.model_discovery.cohere_provider import CohereProvider
 
 # Use ModelsDevProvider with pre-configured filters as drop-in replacements
 AnthropicProvider = partial(ModelsDevProvider, provider="anthropic")
 OpenAIProvider = partial(ModelsDevProvider, provider="openai")
+CohereProvider = partial(ModelsDevProvider, provider="cohere")
+CerebrasProvider = partial(ModelsDevProvider, provider="cerebras")
+FireworksProvider = partial(ModelsDevProvider, provider="fireworks-ai")
+AzureProvider = partial(ModelsDevProvider, provider="azure")
+ChutesProvider = partial(ModelsDevProvider, provider="chutes")
+CortecsProvider = partial(ModelsDevProvider, provider="cortecs")
 
 
 if TYPE_CHECKING:
@@ -53,6 +59,10 @@ ProviderType = Literal[
     "xai",
     "novita",
     "vercel-gateway",
+    "chutes",
+    "cortecs",
+    "azure",
+    "fireworks-ai",
 ]
 
 
@@ -72,6 +82,10 @@ _PROVIDER_MAP: dict[ProviderType, Callable[[], ModelProvider]] = {
     "xai": XAIProvider,
     "novita": NovitaProvider,
     "vercel-gateway": VercelGatewayProvider,
+    "fireworks-ai": FireworksProvider,
+    "azure": AzureProvider,
+    "chutes": ChutesProvider,
+    "cortecs": CortecsProvider,
 }
 
 
