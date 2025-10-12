@@ -4,15 +4,14 @@ from __future__ import annotations
 
 import asyncio
 import logging
+from functools import partial
 from typing import Literal, TYPE_CHECKING
 
-from tokonomics.model_discovery.anthropic_provider import AnthropicProvider
-from tokonomics.model_discovery.openai_provider import OpenAIProvider
+from tokonomics.model_discovery.base import ModelProvider
+from tokonomics.model_discovery.model_info import ModelPricing, ModelInfo
 from tokonomics.model_discovery.groq_provider import GroqProvider
 from tokonomics.model_discovery.mistral_provider import MistralProvider
 from tokonomics.model_discovery.openrouter_provider import OpenRouterProvider
-from tokonomics.model_discovery.base import ModelProvider
-from tokonomics.model_discovery.model_info import ModelPricing, ModelInfo
 from tokonomics.model_discovery.github_provider import GitHubProvider
 from tokonomics.model_discovery.cerebras_provider import CerebrasProvider
 from tokonomics.model_discovery.copilot_provider import CopilotProvider, token_manager
@@ -23,9 +22,15 @@ from tokonomics.model_discovery.requesty_provider import RequestyProvider
 from tokonomics.model_discovery.xai_provider import XAIProvider
 from tokonomics.model_discovery.novita_provider import NovitaProvider
 from tokonomics.model_discovery.vercel_gateway_provider import VercelGatewayProvider
+from tokonomics.model_discovery.modelsdev_provider import ModelsDevProvider
+
+# Use ModelsDevProvider with pre-configured filters as drop-in replacements
+AnthropicProvider = partial(ModelsDevProvider, provider="anthropic")
+OpenAIProvider = partial(ModelsDevProvider, provider="openai")
 
 
 if TYPE_CHECKING:
+    from collections.abc import Callable
     from collections.abc import Sequence
 
 
@@ -51,7 +56,7 @@ ProviderType = Literal[
 ]
 
 
-_PROVIDER_MAP: dict[ProviderType, type[ModelProvider]] = {
+_PROVIDER_MAP: dict[ProviderType, Callable[[], ModelProvider]] = {
     "anthropic": AnthropicProvider,
     "groq": GroqProvider,
     "mistral": MistralProvider,
