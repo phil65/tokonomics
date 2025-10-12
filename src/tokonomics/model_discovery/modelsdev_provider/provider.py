@@ -1,25 +1,87 @@
 """Models.dev provider - unified model discovery from models.dev API."""
 
+# TODO: Evaluate adding in-memory cache layer with asyncio.Lock to prevent duplicate
+# network requests for concurrent calls (even 304 responses).
+
 from __future__ import annotations
 
 import logging
-from typing import Any
+from typing import TYPE_CHECKING, Any, Literal
 
 from tokonomics.model_discovery.base import ModelProvider
 from tokonomics.model_discovery.model_info import ModelInfo, ModelPricing
 
 
+if TYPE_CHECKING:
+    from tokonomics.model_discovery.model_info import Modality
+
+
 logger = logging.getLogger(__name__)
+
+
+ModelsDevProviderType = Literal[
+    "alibaba",
+    "alibaba-cn",
+    "amazon-bedrock",
+    "anthropic",
+    "azure",
+    "baseten",
+    "cerebras",
+    "chutes",
+    "cloudflare-workers-ai",
+    "cortecs",
+    "deepinfra",
+    "deepseek",
+    "fastrouter",
+    "fireworks-ai",
+    "github-copilot",
+    "github-models",
+    "google",
+    "google-vertex",
+    "google-vertex-anthropic",
+    "groq",
+    "huggingface",
+    "inception",
+    "inference",
+    "llama",
+    "lmstudio",
+    "lucidquery",
+    "mistral",
+    "modelscope",
+    "moonshotai",
+    "moonshotai-cn",
+    "morph",
+    "nvidia",
+    "openai",
+    "opencode",
+    "openrouter",
+    "perplexity",
+    "requesty",
+    "submodel",
+    "synthetic",
+    "togetherai",
+    "upstage",
+    "v0",
+    "venice",
+    "vercel",
+    "wandb",
+    "xai",
+    "zai",
+    "zai-coding-plan",
+    "zhipuai",
+    "zhipuai-coding-plan",
+]
 
 
 class ModelsDevProvider(ModelProvider):
     """Models.dev API provider - aggregates models from all providers."""
 
-    def __init__(self):
+    def __init__(self, provider: ModelsDevProviderType | None = None):
         super().__init__()
         self.base_url = "https://models.dev"
         self.headers = {}
         self.params = {}
+        self.provider_filter = provider
 
     def is_available(self) -> bool:
         """Check whether the provider is available for use."""
@@ -48,8 +110,8 @@ class ModelsDevProvider(ModelProvider):
             )
 
         # Extract modalities
-        input_modalities = {"text"}
-        output_modalities = {"text"}
+        input_modalities: set[Modality] = {"text"}
+        output_modalities: set[Modality] = {"text"}
         if "modalities" in data:
             modalities = data["modalities"]
             input_modalities = set(modalities.get("input", ["text"]))
@@ -101,10 +163,18 @@ class ModelsDevProvider(ModelProvider):
             )
 
             if not isinstance(data, dict):
-                raise RuntimeError("Invalid response format from models.dev")
+                msg = "Invalid response format from models.dev"
+                raise RuntimeError(msg)  # noqa: TRY004
 
             models = []
             for provider_id, provider_data in data.items():
+                # Apply provider filter if specified
+                if (
+                    self.provider_filter is not None
+                    and provider_id != self.provider_filter
+                ):
+                    continue
+
                 if not isinstance(provider_data, dict) or "models" not in provider_data:
                     continue
 
@@ -124,7 +194,7 @@ class ModelsDevProvider(ModelProvider):
                     try:
                         model = self._parse_model(model_data)
                         models.append(model)
-                    except Exception as e:
+                    except Exception as e:  # noqa: BLE001
                         logger.warning(
                             "Failed to parse model %s from provider %s: %s",
                             model_id,
@@ -137,38 +207,38 @@ class ModelsDevProvider(ModelProvider):
                 "Fetched %d models from %d providers via models.dev",
                 len(models),
                 len([
-                    p
-                    for p in data.keys()
-                    if isinstance(data[p], dict) and "models" in data[p]
+                    p for p in data if isinstance(data[p], dict) and "models" in data[p]
                 ]),
             )
-            return models
-
         except HttpError as e:
             msg = f"Failed to fetch models from models.dev: {e}"
             raise RuntimeError(msg) from e
+        else:
+            return models
 
 
 if __name__ == "__main__":
     import asyncio
 
     async def main():
+        # Test all providers
         provider = ModelsDevProvider()
         models = await provider.get_models()
+        print(f"All providers: {len(models)} models")
 
-        # Show summary
-        providers = {}
-        for model in models:
-            providers[model.provider] = providers.get(model.provider, 0) + 1
+        # Test specific provider
+        openai_provider = ModelsDevProvider(provider="openai")
+        openai_models = await openai_provider.get_models()
+        print(f"OpenAI only: {len(openai_models)} models")
 
-        print(f"Total models: {len(models)}")
-        print("Models by provider:")
-        for provider_name, count in sorted(providers.items()):
-            print(f"  {provider_name}: {count}")
+        # Test another specific provider
+        anthropic_provider = ModelsDevProvider(provider="anthropic")
+        anthropic_models = await anthropic_provider.get_models()
+        print(f"Anthropic only: {len(anthropic_models)} models")
 
         # Show sample models
-        if models:
-            print("\nSample model:")
-            print(models[0].format())
+        if openai_models:
+            print("\nSample OpenAI model:")
+            print(openai_models[0].format())
 
     asyncio.run(main())
