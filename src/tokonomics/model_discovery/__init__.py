@@ -118,6 +118,7 @@ def get_all_models_sync(
             models = anyenv.run_sync(provider.get_models())
             if not include_deprecated:
                 models = [model for model in models if not model.is_deprecated]
+            models = [model for model in models if not model.is_embedding]
         except Exception as e:  # noqa: BLE001
             logger.warning("Failed to fetch models from %s: %s", provider_name, str(e))
             return None
@@ -180,6 +181,7 @@ async def get_all_models(
             models = await provider.get_models()
             if not include_deprecated:
                 models = [model for model in models if not model.is_deprecated]
+            models = [model for model in models if not model.is_embedding]
         except Exception as e:  # noqa: BLE001
             logger.warning("Failed to fetch models from %s: %s", provider_name, str(e))
             return None
