@@ -90,6 +90,22 @@ class ModelsDevProvider(ModelProvider):
             return bool(os.environ.get("ANTHROPIC_API_KEY"))
         if self.provider_filter == "openai":
             return bool(os.environ.get("OPENAI_API_KEY"))
+        if self.provider_filter == "cohere":
+            return bool(os.environ.get("COHERE_API_KEY") or os.environ.get("CO_API_KEY"))
+        if self.provider_filter == "cerebras":
+            return bool(os.environ.get("CEREBRAS_API_KEY"))
+        if self.provider_filter == "deepseek":
+            return bool(os.environ.get("DEEPSEEK_API_KEY"))
+        if self.provider_filter == "groq":
+            return bool(os.environ.get("GROQ_API_KEY"))
+        if self.provider_filter == "chutes":
+            return bool(os.environ.get("CHUTES_API_KEY"))
+        if self.provider_filter == "cloudflare-workers-ai":
+            return bool(os.environ.get("CF_API_TOKEN"))
+        if self.provider_filter == "cortecs":
+            return bool(os.environ.get("CORTECS_API_KEY"))
+        if self.provider_filter == "xai":
+            return bool(os.environ.get("XAI_API_KEY"))
         return True
 
     def _parse_model(self, data: dict[str, Any]) -> ModelInfo:
