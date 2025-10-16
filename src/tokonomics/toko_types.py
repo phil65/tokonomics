@@ -34,18 +34,8 @@ class TokenCosts:
     """Cost for completion tokens"""
 
     @property
-    def prompt_cost(self) -> float:
-        """Calculate total cost as sum of prompt and completion costs."""
-        return self.input_cost
-
-    @property
-    def completion_cost(self) -> float:
-        """Calculate total cost as sum of prompt and completion costs."""
-        return self.output_cost
-
-    @property
     def total_cost(self) -> float:
-        """Calculate total cost as sum of prompt and completion costs."""
+        """Calculate total cost as sum of input and output costs."""
         return self.input_cost + self.output_cost
 
 
