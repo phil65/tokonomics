@@ -30,7 +30,6 @@ SAMPLE_PRICING_DATA = {
 def setup_teardown():
     """Setup and teardown for each test."""
     # Disable caching during tests
-    tokonomics.core._TESTING = True
 
     # Clear in-memory cache
     tokonomics.core._cost_cache.clear()
@@ -38,7 +37,6 @@ def setup_teardown():
     yield
 
     # Reset after test
-    tokonomics.core._TESTING = False
     tokonomics.core._cost_cache.clear()
 
 

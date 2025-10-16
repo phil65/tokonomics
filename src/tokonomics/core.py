@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import os
 import pathlib
 from typing import Any, cast
 
@@ -23,7 +24,7 @@ _cost_cache: dict[str, object] = {}
 
 # Cache timeout in seconds (24 hours)
 _CACHE_TIMEOUT = 86400
-_TESTING = False  # Flag to disable caching during tests
+_TESTING = os.getenv("PYTEST_CURRENT_TEST")  # Flag to disable caching during tests
 
 LITELLM_PRICES_URL = "https://raw.githubusercontent.com/BerriAI/litellm/refs/heads/main/model_prices_and_context_window.json"
 

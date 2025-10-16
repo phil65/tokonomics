@@ -1,13 +1,11 @@
 from __future__ import annotations
 
-import tokonomics.core
 from tokonomics.core import get_model_capabilities
 
 
 async def test_get_model_capabilities():
     """Test model capabilities fetching."""
     # Test with a well-known model that should have stable capabilities
-    tokonomics.core._TESTING = True
 
     capabilities = await get_model_capabilities("gpt-4")
     assert capabilities is not None
