@@ -9,7 +9,7 @@ from typing import TYPE_CHECKING, Any
 from schemez import Schema
 
 from tokonomics import log
-from tokonomics.models import (
+from tokonomics.data_models import (
     AudioSpeechModel,
     AudioTranscriptionModel,
     ChatCompletionModel,
@@ -28,7 +28,7 @@ logger = log.get_logger(__name__)
 if TYPE_CHECKING:
     from collections.abc import Iterator
 
-    from tokonomics.models import ModelMode
+    from tokonomics.data_models import ModelMode
 
 
 def iter_model_name_candidates(name: str) -> Iterator[str]:

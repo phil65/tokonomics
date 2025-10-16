@@ -3,11 +3,10 @@
 from collections import Counter
 from pathlib import Path
 
-from tokonomics.models import (
+from tokonomics.data_models import (
     AudioTranscriptionModel,
     ChatCompletionModel,
     EmbeddingModel,
-    ModelMode,
     ResponsesModel,
 )
 from tokonomics.registry import ModelRegistry
@@ -83,26 +82,6 @@ def main():
 
             if isinstance(model_config, ChatCompletionModel):
                 print(f"  Function calling: {model_config.supports_function_calling}")
-
-    # Cost analysis
-    print("\n" + "=" * 50)
-    print("COST ANALYSIS")
-    print("=" * 50)
-
-    # Find cheapest models by type
-    for mode in [ModelMode.CHAT, ModelMode.EMBEDDING, ModelMode.AUDIO_TRANSCRIPTION]:
-        if result := registry.get_cheapest_model_by_mode(mode):
-            name, model = result
-            if isinstance(model, (ChatCompletionModel, EmbeddingModel, ResponsesModel)):
-                cost_str = f"${model.input_cost_per_token:.8f}/token"
-            elif (
-                isinstance(model, AudioTranscriptionModel)
-                and model.input_cost_per_second is not None
-            ):
-                cost_str = f"${model.input_cost_per_second:.6f}/second"
-            else:
-                cost_str = "Unknown pricing"
-            print(f"Cheapest {mode.value:20}: {name:30} {cost_str}")
 
     # Capability analysis
     print("\n" + "=" * 50)
