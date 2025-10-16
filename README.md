@@ -82,30 +82,6 @@ if costs:
 clear_cache()
 ```
 
-### Getting Model Token Limits
-
-You can retrieve the token limits for a model using `get_model_limits`:
-
-```python
-from tokonomics import get_model_limits
-
-async def main():
-    # Get token limit information for a model
-    limits = await get_model_limits("gpt-4")
-
-    if limits:
-        print(f"Maximum total tokens: {limits.total_tokens}")
-        print(f"Maximum input tokens: {limits.input_tokens}")
-        print(f"Maximum output tokens: {limits.output_tokens}")
-    else:
-        print("Could not find limit data for model")
-```
-
-The function returns a `TokenLimits` object with three fields:
-- `total_tokens`: Maximum combined tokens (input + output) the model supports
-- `input_tokens`: Maximum number of input/prompt tokens
-- `output_tokens`: Maximum number of output/completion tokens
-
 
 ### Pydantic-AI Integration
 

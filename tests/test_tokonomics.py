@@ -8,7 +8,6 @@ import respx
 
 from tokonomics import calculate_token_cost, core, get_model_costs
 import tokonomics.core
-from tokonomics.core import get_model_limits
 
 
 SAMPLE_PRICING_DATA = {
@@ -130,24 +129,6 @@ async def test_api_error(mock_litellm_api):
     mock_litellm_api.get(core.LITELLM_PRICES_URL).mock(return_value=httpx.Response(500))
     costs = await get_model_costs("gpt-4", cache_timeout=1)
     assert costs is None
-
-
-async def test_get_model_limits_success(mock_litellm_api):
-    """Test successful model limit retrieval."""
-    limits = await get_model_limits("gpt-4", cache_timeout=1)
-    assert limits is not None
-    assert limits.total_tokens == 8192  # noqa: PLR2004
-    assert limits.input_tokens == 6144  # noqa: PLR2004
-    assert limits.output_tokens == 2048  # noqa: PLR2004
-
-
-async def test_get_model_limits_fallback(mock_litellm_api):
-    """Test limits fallback to max_tokens when specific limits aren't provided."""
-    limits = await get_model_limits("gpt-3.5-turbo", cache_timeout=1)
-    assert limits is not None
-    assert limits.total_tokens == 4096  # noqa: PLR2004
-    assert limits.input_tokens == 4096  # Fallback to max_tokens  # noqa: PLR2004
-    assert limits.output_tokens == 4096  # Fallback to max_tokens  # noqa: PLR2004
 
 
 if __name__ == "__main__":

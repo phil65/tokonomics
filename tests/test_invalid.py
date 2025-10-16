@@ -6,58 +6,8 @@ from unittest.mock import AsyncMock, patch
 
 import pytest
 
-from tokonomics.core import TokenLimits, get_model_costs, get_model_limits
+from tokonomics.core import get_model_costs
 from tokonomics.toko_types import ModelCosts
-
-
-async def test_get_model_limits_handles_non_numeric_values(
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    """Test handling of non-numeric values in LiteLLM data."""
-    # Mock response with mix of valid and invalid data
-    mock_data = {
-        "sample_spec": "some value",  # Should be skipped
-        "valid-model": {
-            "max_tokens": "32000",
-            "max_input_tokens": 24000,
-            "max_output_tokens": "8000",
-        },
-        "broken-model": {
-            "max_tokens": (
-                "set to max_output_tokens if provider specifies it. "
-                "IF not set to max_tokens provider specifies"
-            ),
-            "max_input_tokens": "not a number",
-            "max_output_tokens": "description instead of value",
-        },
-        "float-model": {
-            "max_tokens": "32000.0",
-            "max_input_tokens": 24000.5,
-            "max_output_tokens": "8000.9",
-        },
-    }
-
-    mock_get_json = AsyncMock(return_value=mock_data)
-    with patch("tokonomics.core.get_json", mock_get_json):
-        # Test valid model
-        valid_limits = await get_model_limits("valid-model")
-        assert valid_limits == TokenLimits(
-            total_tokens=32000,
-            input_tokens=24000,
-            output_tokens=8000,
-        )
-
-        # Test model with non-numeric values
-        broken_limits = await get_model_limits("broken-model")
-        assert broken_limits is None
-
-        # Test model with float values
-        float_limits = await get_model_limits("float-model")
-        assert float_limits == TokenLimits(
-            total_tokens=32000,
-            input_tokens=24000,
-            output_tokens=8000,
-        )
 
 
 async def test_get_model_costs_handles_non_numeric_values(

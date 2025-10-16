@@ -10,7 +10,7 @@ from platformdirs import user_data_dir
 
 from tokonomics import log
 from tokonomics.helpers import _is_numeric, _safe_numeric_convert
-from tokonomics.toko_types import ModelCapabilities, ModelCosts, TokenCosts, TokenLimits
+from tokonomics.toko_types import ModelCapabilities, ModelCosts, TokenCosts
 
 
 logger = log.get_logger(__name__)
@@ -195,86 +195,6 @@ async def calculate_token_cost(
         token_costs.total_cost,
     )
     return token_costs
-
-
-async def get_model_limits(
-    model: str,
-    *,
-    cache_timeout: int = _CACHE_TIMEOUT,
-) -> TokenLimits | None:
-    """Get token limit information for a model from LiteLLM data.
-
-    Args:
-        model: Name of the model to look up limits for
-        cache_timeout: Number of seconds to keep limits in cache (default: 24 hours)
-
-    Returns:
-        TokenLimits | None: Model's token limits if found, None otherwise
-    """
-    normalized_model = model.lower()
-    cache_key = f"{normalized_model}_limits"
-
-    cached_limits = cast(TokenLimits | None, _cost_cache.get(cache_key))
-    if cached_limits is not None:
-        return cached_limits
-
-    try:
-        logger.debug("Downloading model data from LiteLLM...")
-        data: dict[str, Any] = await get_json(
-            LITELLM_PRICES_URL,
-            cache=not _TESTING,
-            cache_ttl=_CACHE_TIMEOUT,
-            return_type=dict,
-        )
-        assert isinstance(data, dict), f"Expected dict, got {type(data)}"
-        logger.debug("Successfully downloaded model data")
-
-        all_limits: dict[str, TokenLimits] = {}
-        for name, info in data.items():
-            if not isinstance(info, dict):  # Skip sample_spec
-                continue
-
-            # Check if values are numeric before parsing
-            max_tokens_raw = info.get("max_tokens", 0)
-            max_input_raw = info.get("max_input_tokens", max_tokens_raw)
-            max_output_raw = info.get("max_output_tokens", max_tokens_raw)
-
-            # Skip if values aren't numeric
-            if not all(map(_is_numeric, (max_tokens_raw, max_input_raw, max_output_raw))):
-                continue
-
-            # Now safe to convert to int
-            max_tokens = int(_safe_numeric_convert(max_tokens_raw))
-            max_input = int(_safe_numeric_convert(max_input_raw))
-            max_output = int(_safe_numeric_convert(max_output_raw))
-
-            if any((max_tokens, max_input, max_output)):
-                all_limits[name.lower()] = TokenLimits(
-                    total_tokens=max_tokens,
-                    input_tokens=max_input,
-                    output_tokens=max_output,
-                )
-
-        logger.debug("Extracted limits for %d models", len(all_limits))
-
-        # Update cache with all limits
-        for model_name, limit_info in all_limits.items():
-            limit_cache_key = f"{model_name}_limits"
-            _cost_cache[limit_cache_key] = limit_info
-            # Also cache the model name for _find_litellm_model_name
-            _cost_cache[model_name] = {}
-        logger.debug("Updated cache with new limit data")
-
-        # Return limits for requested model
-        if normalized_model in all_limits:
-            logger.debug("Found limits for requested model: %s", model)
-            return all_limits[normalized_model]
-    except Exception as e:
-        error_msg = f"Failed to get model limits for {model}: {e}"
-        logger.exception(error_msg)
-        raise ValueError(error_msg) from e
-    else:
-        return None
 
 
 async def get_available_models(
