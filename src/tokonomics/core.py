@@ -9,6 +9,7 @@ from anyenv import get_json
 from platformdirs import user_data_dir
 
 from tokonomics import log
+from tokonomics.helpers import _is_numeric, _safe_numeric_convert
 from tokonomics.toko_types import ModelCapabilities, ModelCosts, TokenCosts, TokenLimits
 
 
@@ -32,37 +33,7 @@ def reset_cache() -> None:
     _cost_cache.clear()
 
 
-def _is_numeric(value: str | int | float | None) -> bool:  # noqa: PYI041
-    """Check if a value can be converted to a number."""
-    if value is None:
-        return False
-    if isinstance(value, int | float):
-        return True
-    if not isinstance(value, str):
-        return False
-    try:
-        float(value)
-    except ValueError:
-        return False
-    else:
-        return True
-
-
-def _safe_numeric_convert(value: Any) -> float:
-    """Safely convert a value to float, returning 0 if not possible."""
-    if value is None:
-        return 0.0
-    if isinstance(value, (int, float)):
-        return float(value)
-    if isinstance(value, str):
-        try:
-            return float(value)
-        except ValueError:
-            return 0.0
-    return 0.0
-
-
-def find_litellm_model_name(model: str) -> str | None:
+def _find_litellm_model_name(model: str) -> str | None:
     """Find matching model name in LiteLLM pricing data.
 
     Attempts to match the input model name against cached LiteLLM pricing data
@@ -82,17 +53,13 @@ def find_litellm_model_name(model: str) -> str | None:
 
     if ":" in model:  # For provider:model format, try both variants
         provider, model_name = model.split(":", 1)
-
-        model_name = model_name.lower()  # Try just model name (normalized)
         if _cost_cache.get(model_name) is not None:
             logger.debug("Found cache match for base name: %r", model_name)
             return model_name
         # Try provider/model  (normalized)
-        provider_format = f"{provider.lower()}/{model_name}"
-        if _cost_cache.get(provider_format) is not None:
-            logger.debug("Found cache match for provider format: %r", provider_format)
-            return provider_format
-
+        if _cost_cache.get(key := f"{provider.lower()}/{model_name}") is not None:
+            logger.debug("Found cache match for provider format: %r", key)
+            return key
     logger.debug("No cache match found for: %r", model)
     return None
 
@@ -116,7 +83,6 @@ async def get_model_costs(
     """
     normalized_model = model.lower()
     cache_key = f"{normalized_model}_costs"
-
     cached_costs = cast(ModelCosts | None, _cost_cache.get(cache_key))
     if cached_costs is not None:
         return cached_costs
@@ -295,7 +261,7 @@ async def get_model_limits(
         for model_name, limit_info in all_limits.items():
             limit_cache_key = f"{model_name}_limits"
             _cost_cache[limit_cache_key] = limit_info
-            # Also cache the model name for find_litellm_model_name
+            # Also cache the model name for _find_litellm_model_name
             _cost_cache[model_name] = {}
         logger.debug("Updated cache with new limit data")
 
@@ -463,8 +429,8 @@ if __name__ == "__main__":
 
     async def main():
         # Example usage
-        model_name = "gpt-3.5-turbo"
-        limits = await get_model_limits(model_name)
+        model_name = "openrouter:openai/gpt-5-nano"
+        limits = await get_model_costs(model_name)
         print(limits)
 
     asyncio.run(main())
