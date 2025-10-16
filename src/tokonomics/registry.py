@@ -2,13 +2,13 @@
 
 from __future__ import annotations
 
-from decimal import Decimal
 import json
 import pathlib
 from typing import TYPE_CHECKING, Any
 
 from schemez import Schema
 
+from tokonomics import log
 from tokonomics.models import (
     AudioSpeechModel,
     AudioTranscriptionModel,
@@ -23,10 +23,32 @@ from tokonomics.models import (
 )
 
 
+logger = log.get_logger(__name__)
+
 if TYPE_CHECKING:
-    from tokonomics.models import (
-        ModelMode,
-    )
+    from collections.abc import Iterator
+
+    from tokonomics.models import ModelMode
+
+
+def iter_model_name_candidates(name: str) -> Iterator[str]:
+    """Iter through model name candidates in LiteLLM pricing data.
+
+    Iterates through name candidates for the LLM pricing data
+    by trying different formats (direct match, base name, provider format).
+
+    Args:
+        name: Model name (e.g. "openai:gpt-4", "gpt-4")
+
+    Yields:
+        str: Name candidates for the LLM pricing data
+    """
+    name = name.lower()
+    yield name
+    if ":" in name:  # For provider:name format, try both variants
+        provider, model_name = name.split(":", 1)
+        yield model_name
+        yield f"{provider.lower()}/{model_name}"
 
 
 class ModelRegistry(Schema):
@@ -61,43 +83,9 @@ class ModelRegistry(Schema):
             if isinstance(config, ChatCompletionModel)
         }
 
-    def get_embedding_models(self) -> dict[str, EmbeddingModel]:
-        """Get all embedding models."""
-        return {
-            name: config
-            for name, config in self.models.items()
-            if isinstance(config, EmbeddingModel)
-        }
-
     def get_providers(self) -> set[str]:
         """Get all unique providers."""
         return {config.litellm_provider for config in self.models.values()}
-
-    def get_cheapest_model_by_mode(
-        self, mode: ModelMode
-    ) -> tuple[str, ModelConfig] | None:
-        """Get the cheapest model for a given mode based on input token cost."""
-        models = self.get_models_by_mode(mode)
-        if not models:
-            return None
-
-        # Find model with lowest input cost, handling None values
-        def get_cost(item):
-            _, model = item
-            if (
-                hasattr(model, "input_cost_per_token")
-                and model.input_cost_per_token is not None
-            ):
-                return model.input_cost_per_token
-            if (
-                isinstance(model, AudioTranscriptionModel)
-                and model.input_cost_per_second is not None
-            ):
-                return model.input_cost_per_second
-            return Decimal("inf")
-
-        cheapest_name, cheapest_model = min(models.items(), key=get_cost)
-        return cheapest_name, cheapest_model
 
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> ModelRegistry:
@@ -113,30 +101,29 @@ class ModelRegistry(Schema):
                     dropped_models.append(name)
                     continue
 
-                # Manual discrimination based on mode
                 mode = config_data["mode"]
-
-                if mode in ("chat", "completion"):
-                    model_config = ChatCompletionModel.model_validate(config_data)
-                elif mode == "embedding":
-                    model_config = EmbeddingModel.model_validate(config_data)
-                elif mode == "audio_transcription":
-                    model_config = AudioTranscriptionModel.model_validate(config_data)
-                elif mode == "audio_speech":
-                    model_config = AudioSpeechModel.model_validate(config_data)
-                elif mode == "image_generation":
-                    model_config = ImageGenerationModel.model_validate(config_data)
-                elif mode == "video_generation":
-                    model_config = VideoGenerationModel.model_validate(config_data)
-                elif mode == "rerank":
-                    model_config = RerankModel.model_validate(config_data)
-                elif mode == "responses":
-                    model_config = ResponsesModel.model_validate(config_data)
-                elif mode == "moderation":
-                    model_config = ModerationModel.model_validate(config_data)
-                else:
-                    # Default to chat for unknown modes
-                    model_config = ChatCompletionModel.model_validate(config_data)
+                match mode:
+                    case "chat" | "completion":
+                        model_config = ChatCompletionModel.model_validate(config_data)
+                    case "embedding":
+                        model_config = EmbeddingModel.model_validate(config_data)
+                    case "audio_transcription":
+                        model_config = AudioTranscriptionModel.model_validate(config_data)
+                    case "audio_speech":
+                        model_config = AudioSpeechModel.model_validate(config_data)
+                    case "image_generation":
+                        model_config = ImageGenerationModel.model_validate(config_data)
+                    case "video_generation":
+                        model_config = VideoGenerationModel.model_validate(config_data)
+                    case "rerank":
+                        model_config = RerankModel.model_validate(config_data)
+                    case "responses":
+                        model_config = ResponsesModel.model_validate(config_data)
+                    case "moderation":
+                        model_config = ModerationModel.model_validate(config_data)
+                    case _:
+                        # Default to chat for unknown modes
+                        model_config = ChatCompletionModel.model_validate(config_data)
 
                 models[name] = model_config
 
@@ -144,13 +131,13 @@ class ModelRegistry(Schema):
                 failed_models.append((name, str(e)))
                 # Only print first few failures to avoid spam
                 if len(failed_models) <= 5:  # noqa: PLR2004
-                    print(f"Failed to parse model {name}: {e}")
+                    logger.debug("Failed to parse model %s: %s", name, e)
 
         if dropped_models:
-            print(f"Dropped {len(dropped_models)} models without mode field")
+            logger.debug("Dropped %s models without mode field", len(dropped_models))
         if failed_models:
-            print(f"Failed to parse {len(failed_models)} models out of {len(data)}")
-
+            msg = "Failed to parse %s models out of %s"
+            logger.debug(msg, len(failed_models), len(data))
         return cls(models=models)
 
     @classmethod
