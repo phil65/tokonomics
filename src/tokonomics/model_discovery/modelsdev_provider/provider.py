@@ -5,6 +5,7 @@
 
 from __future__ import annotations
 
+import asyncio
 import logging
 import os
 from typing import TYPE_CHECKING, Any, Literal
@@ -77,6 +78,9 @@ ModelsDevProviderType = Literal[
 
 class ModelsDevProvider(ModelProvider):
     """Models.dev API provider - aggregates models from all providers."""
+
+    # Class-level lock to prevent duplicate concurrent requests
+    _cache_lock = asyncio.Lock()
 
     def __init__(self, provider: ModelsDevProviderType | None = None):
         super().__init__()
@@ -177,10 +181,11 @@ class ModelsDevProvider(ModelProvider):
         )
 
     async def get_models(self) -> list[ModelInfo]:
-        """Fetch all models from models.dev API."""
+        """Fetch all models from models.dev API with concurrent request deduplication."""
         from anyenv import HttpError, get_json
 
-        try:
+        # Use class-level lock to prevent duplicate concurrent requests
+        async with self._cache_lock:
             logger.debug("Fetching models from models.dev API")
             data = await get_json(
                 f"{self.base_url}/api.json",
@@ -194,6 +199,7 @@ class ModelsDevProvider(ModelProvider):
                 msg = "Invalid response format from models.dev"
                 raise RuntimeError(msg)  # noqa: TRY004
 
+        try:
             models = []
             for provider_id, provider_data in data.items():
                 # Apply provider filter if specified
@@ -231,13 +237,22 @@ class ModelsDevProvider(ModelProvider):
                         )
                         continue
 
-            logger.info(
-                "Fetched %d models from %d providers via models.dev",
-                len(models),
-                len([
-                    p for p in data if isinstance(data[p], dict) and "models" in data[p]
-                ]),
-            )
+            if self.provider_filter:
+                logger.debug(
+                    "Fetched %d models for provider %s via models.dev",
+                    len(models),
+                    self.provider_filter,
+                )
+            else:
+                logger.info(
+                    "Fetched %d models from %d providers via models.dev",
+                    len(models),
+                    len([
+                        p
+                        for p in data
+                        if isinstance(data[p], dict) and "models" in data[p]
+                    ]),
+                )
         except HttpError as e:
             msg = f"Failed to fetch models from models.dev: {e}"
             raise RuntimeError(msg) from e
