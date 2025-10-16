@@ -1,6 +1,11 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from typing import TYPE_CHECKING
+
+
+if TYPE_CHECKING:
+    from collections.abc import MutableMapping
 
 
 # Data here is copied from groq developer console (no API access right now)
@@ -30,7 +35,7 @@ class SpeechToTextModel:
 
 
 # Chat completion models
-chat_models: dict[str, ChatCompletionModel] = {}
+chat_models: MutableMapping[str, ChatCompletionModel] = {}
 chat_model_data = [
     ChatCompletionModel("allam-2-7b", 30, 7000, 6000, None),
     ChatCompletionModel("deepseek-r1-distill-llama-70b", 30, 1000, 6000, None),

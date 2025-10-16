@@ -26,7 +26,7 @@ from tokonomics.data_models import (
 logger = log.get_logger(__name__)
 
 if TYPE_CHECKING:
-    from collections.abc import Iterator
+    from collections.abc import Iterator, Mapping
 
     from tokonomics.data_models import ModelMode
 
@@ -75,7 +75,7 @@ class ModelRegistry(Schema):
             name: config for name, config in self.models.items() if config.mode == mode
         }
 
-    def get_chat_models(self) -> dict[str, ChatCompletionModel]:
+    def get_chat_models(self) -> Mapping[str, ChatCompletionModel]:
         """Get all chat/completion models."""
         return {
             name: config
@@ -104,7 +104,9 @@ class ModelRegistry(Schema):
                 mode = config_data["mode"]
                 match mode:
                     case "chat" | "completion":
-                        model_config = ChatCompletionModel.model_validate(config_data)
+                        model_config: ModelConfig = ChatCompletionModel.model_validate(
+                            config_data
+                        )
                     case "embedding":
                         model_config = EmbeddingModel.model_validate(config_data)
                     case "audio_transcription":

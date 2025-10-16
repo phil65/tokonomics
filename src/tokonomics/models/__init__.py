@@ -1,15 +1,15 @@
 """Clean API models for tokonomics."""
 
 from tokonomics.models.chat_model import (
-    ChatCapabilities,
-    ChatLimits,
+    ModelCapabilities,
+    ModelLimits,
     ChatModel,
-    ChatPricing,
+    ModelPricing,
 )
 
 __all__ = [
-    "ChatCapabilities",
-    "ChatLimits",
     "ChatModel",
-    "ChatPricing",
+    "ModelCapabilities",
+    "ModelLimits",
+    "ModelPricing",
 ]

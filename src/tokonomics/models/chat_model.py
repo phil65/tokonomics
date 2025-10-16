@@ -3,13 +3,18 @@
 from __future__ import annotations
 
 from decimal import Decimal
+from typing import TYPE_CHECKING
 
 from schemez import Schema
 
-from tokonomics.data_models import ChatCompletionModel, ModelMode, TieredPricingTier
+from tokonomics.data_models import ModelMode, TieredPricingTier
 
 
-class ChatPricing(Schema):
+if TYPE_CHECKING:
+    from tokonomics.data_models import ChatCompletionModel
+
+
+class ModelPricing(Schema):
     """Pricing information for chat models."""
 
     input_cost_per_token: Decimal | None = None
@@ -61,52 +66,89 @@ class ChatPricing(Schema):
     tiered_pricing: list[TieredPricingTier] | None = None
     """Volume-based tiered pricing if available."""
 
-    def calculate_cost(self, input_tokens: int, output_tokens: int = 0) -> Decimal | None:
-        """Calculate cost based on token count using appropriate pricing tier.
+    def calculate_cost(
+        self,
+        *,
+        input_tokens: int = 0,
+        cache_write_tokens: int = 0,
+        cache_read_tokens: int = 0,
+        input_audio_tokens: int = 0,
+        cache_audio_read_tokens: int = 0,
+        output_tokens: int = 0,
+    ) -> Decimal | None:
+        """Calculate cost based on usage mirroring pydantic-ai RunUsage.
 
         Uses contextual pricing if token count exceeds thresholds,
         otherwise uses standard input/output cost per token.
 
         Args:
-            input_tokens: Number of input tokens
-            output_tokens: Number of output tokens
+            input_tokens: Total number of input/prompt tokens
+            cache_write_tokens: Total number of tokens written to the cache
+            cache_read_tokens: Total number of tokens read from the cache
+            input_audio_tokens: Total number of audio input tokens
+            cache_audio_read_tokens: Total number of audio tokens read from the cache
+            output_tokens: Total number of output/completion tokens
 
         Returns:
             Total cost or None if pricing unavailable
         """
-        if self.input_cost_per_token is None and self.output_cost_per_token is None:
-            return None
-
         total_cost = Decimal(0)
 
-        # Calculate input cost
-        if input_tokens > 0:
-            if input_tokens > 200_000 and self.input_cost_above_200k is not None:
+        # Calculate total input tokens for context threshold determination
+        total_input = input_tokens + cache_write_tokens + input_audio_tokens
+
+        # Calculate input cost (standard text tokens)
+        if input_tokens > 0 and self.input_cost_per_token is not None:
+            if total_input > 200_000 and self.input_cost_above_200k is not None:  # noqa: PLR2004
                 input_cost = self.input_cost_above_200k
-            elif input_tokens > 128_000 and self.input_cost_above_128k is not None:
+            elif total_input > 128_000 and self.input_cost_above_128k is not None:  # noqa: PLR2004
                 input_cost = self.input_cost_above_128k
             else:
                 input_cost = self.input_cost_per_token
+            total_cost += input_cost * input_tokens
 
-            if input_cost is not None:
-                total_cost += input_cost * input_tokens
+        # Calculate cache write cost
+        if cache_write_tokens > 0:
+            # Use cache creation pricing if available, otherwise standard input pricing
+            cache_cost = self.input_cost_per_token or Decimal(
+                0
+            )  # Could add specific cache_write_cost field
+            total_cost += cache_cost * cache_write_tokens
+
+        # Calculate cache read cost
+        if cache_read_tokens > 0:
+            # Typically much cheaper than cache writes
+            cache_read_cost = self.input_cost_per_token or Decimal(0)
+            total_cost += (
+                cache_read_cost * cache_read_tokens * Decimal("0.1")
+            )  # Assume 10% of write cost
+
+        # Calculate audio input cost
+        if input_audio_tokens > 0:
+            audio_cost = self.input_cost_per_token or Decimal(0)
+            total_cost += audio_cost * input_audio_tokens
+
+        # Calculate cache audio read cost
+        if cache_audio_read_tokens > 0:
+            audio_cache_cost = self.input_cost_per_token or Decimal(0)
+            total_cost += audio_cache_cost * cache_audio_read_tokens * Decimal("0.1")
 
         # Calculate output cost
-        if output_tokens > 0:
-            if input_tokens > 200_000 and self.output_cost_above_200k is not None:
+        if output_tokens > 0 and self.output_cost_per_token is not None:
+            if total_input > 200_000 and self.output_cost_above_200k is not None:  # noqa: PLR2004
                 output_cost = self.output_cost_above_200k
-            elif input_tokens > 128_000 and self.output_cost_above_128k is not None:
+            elif total_input > 128_000 and self.output_cost_above_128k is not None:  # noqa: PLR2004
                 output_cost = self.output_cost_above_128k
             else:
                 output_cost = self.output_cost_per_token
+            total_cost += output_cost * output_tokens
 
-            if output_cost is not None:
-                total_cost += output_cost * output_tokens
+        # Note: tool_calls and requests are currently not charged by most providers
 
-        return total_cost
+        return total_cost if total_cost > 0 else None
 
 
-class ChatLimits(Schema):
+class ModelLimits(Schema):
     """Token and content limits for chat models."""
 
     max_input_tokens: int | None = None
@@ -134,7 +176,7 @@ class ChatLimits(Schema):
     """Maximum PDF size in MB."""
 
 
-class ChatCapabilities(Schema):
+class ModelCapabilities(Schema):
     """Chat model capabilities and features."""
 
     supports_function_calling: bool = False
@@ -195,13 +237,13 @@ class ChatModel(Schema):
     mode: ModelMode
     """Model operation mode."""
 
-    pricing: ChatPricing
+    pricing: ModelPricing
     """Pricing information and cost calculation."""
 
-    limits: ChatLimits
+    limits: ModelLimits
     """Token and content limits."""
 
-    capabilities: ChatCapabilities
+    capabilities: ModelCapabilities
     """Model capabilities and features."""
 
     @classmethod
@@ -210,7 +252,7 @@ class ChatModel(Schema):
     ) -> ChatModel:
         """Convert from internal ChatCompletionModel to clean API model."""
         # Extract pricing info
-        pricing = ChatPricing(
+        pricing = ModelPricing(
             input_cost_per_token=model.input_cost_per_token,
             output_cost_per_token=model.output_cost_per_token,
             output_cost_per_reasoning_token=model.output_cost_per_reasoning_token,
@@ -229,7 +271,7 @@ class ChatModel(Schema):
         )
 
         # Extract limits
-        limits = ChatLimits(
+        limits = ModelLimits(
             max_input_tokens=model.max_input_tokens,
             max_output_tokens=model.max_output_tokens,
             max_images_per_prompt=model.max_images_per_prompt,
@@ -241,7 +283,7 @@ class ChatModel(Schema):
         )
 
         # Extract capabilities
-        capabilities = ChatCapabilities(
+        capabilities = ModelCapabilities(
             supports_function_calling=model.supports_function_calling or False,
             supports_parallel_function_calling=model.supports_parallel_function_calling
             or False,
