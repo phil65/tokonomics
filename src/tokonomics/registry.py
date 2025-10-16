@@ -152,22 +152,24 @@ def load_model_config(config_data: dict[str, Any]) -> ModelConfig:  # noqa: PLR0
     """Load a single model configuration with manual discrimination."""
     mode = config_data.get("mode", "chat")
 
-    if mode in ("chat", "completion"):
-        return ChatCompletionModel.model_validate(config_data)
-    if mode == "embedding":
-        return EmbeddingModel.model_validate(config_data)
-    if mode == "audio_transcription":
-        return AudioTranscriptionModel.model_validate(config_data)
-    if mode == "audio_speech":
-        return AudioSpeechModel.model_validate(config_data)
-    if mode == "image_generation":
-        return ImageGenerationModel.model_validate(config_data)
-    if mode == "video_generation":
-        return VideoGenerationModel.model_validate(config_data)
-    if mode == "rerank":
-        return RerankModel.model_validate(config_data)
-    if mode == "responses":
-        return ResponsesModel.model_validate(config_data)
-    if mode == "moderation":
-        return ModerationModel.model_validate(config_data)
-    return ChatCompletionModel.model_validate(config_data)
+    match mode:
+        case "chat" | "completion":
+            return ChatCompletionModel.model_validate(config_data)
+        case "embedding":
+            return EmbeddingModel.model_validate(config_data)
+        case "audio_transcription":
+            return AudioTranscriptionModel.model_validate(config_data)
+        case "audio_speech":
+            return AudioSpeechModel.model_validate(config_data)
+        case "image_generation":
+            return ImageGenerationModel.model_validate(config_data)
+        case "video_generation":
+            return VideoGenerationModel.model_validate(config_data)
+        case "rerank":
+            return RerankModel.model_validate(config_data)
+        case "responses":
+            return ResponsesModel.model_validate(config_data)
+        case "moderation":
+            return ModerationModel.model_validate(config_data)
+        case _:
+            return ChatCompletionModel.model_validate(config_data)
