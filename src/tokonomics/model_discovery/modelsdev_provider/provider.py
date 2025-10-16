@@ -111,6 +111,8 @@ class ModelsDevProvider(ModelProvider):
             return bool(os.environ.get("AZURE_OPENAI_API_KEY"))
         if self.provider_filter == "fireworks-ai":
             return bool(os.environ.get("FIREWORKS_API_KEY"))
+        if self.provider_filter == "mistral":
+            return bool(os.environ.get("MISTRAL_API_KEY"))
         return True
 
     def _parse_model(self, data: dict[str, Any]) -> ModelInfo:
