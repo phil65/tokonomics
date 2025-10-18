@@ -26,6 +26,13 @@ class ModelPricing(Schema):
     output_cost_per_reasoning_token: Decimal | None = None
     """Cost per reasoning output token for models like o1."""
 
+    # Caching pricing
+    cache_creation_input_token_cost: Decimal | None = None
+    """Cost per token for cache creation."""
+
+    cache_read_input_token_cost: Decimal | None = None
+    """Cost per token for cache reads."""
+
     # Contextual pricing
     input_cost_above_128k: Decimal | None = None
     """Input cost per token above 128k context."""
@@ -110,18 +117,23 @@ class ModelPricing(Schema):
         # Calculate cache write cost
         if cache_write_tokens > 0:
             # Use cache creation pricing if available, otherwise standard input pricing
-            cache_cost = self.input_cost_per_token or Decimal(
-                0
-            )  # Could add specific cache_write_cost field
+            cache_cost = (
+                self.cache_creation_input_token_cost
+                or self.input_cost_per_token
+                or Decimal(0)
+            )
             total_cost += cache_cost * cache_write_tokens
 
         # Calculate cache read cost
         if cache_read_tokens > 0:
-            # Typically much cheaper than cache writes
-            cache_read_cost = self.input_cost_per_token or Decimal(0)
-            total_cost += (
-                cache_read_cost * cache_read_tokens * Decimal("0.1")
-            )  # Assume 10% of write cost
+            # Use actual cache read pricing if available, otherwise fallback to 10%
+            if self.cache_read_input_token_cost is not None:
+                cache_read_cost = self.cache_read_input_token_cost
+                total_cost += cache_read_cost * cache_read_tokens
+            else:
+                # Fallback: assume 10% of input cost
+                fallback_cost = self.input_cost_per_token or Decimal(0)
+                total_cost += fallback_cost * cache_read_tokens * Decimal("0.1")
 
         # Calculate audio input cost
         if input_audio_tokens > 0:
@@ -267,6 +279,8 @@ class ChatModel(Schema):
             input_cost_per_image=model.input_cost_per_image,
             input_cost_per_audio_second=model.input_cost_per_audio_per_second,
             input_cost_per_video_second=model.input_cost_per_video_per_second,
+            cache_creation_input_token_cost=model.cache_creation_input_token_cost,
+            cache_read_input_token_cost=model.cache_read_input_token_cost,
             tiered_pricing=model.tiered_pricing,
         )
 
