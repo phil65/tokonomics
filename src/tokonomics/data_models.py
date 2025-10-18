@@ -198,25 +198,84 @@ class BaseModelConfig(Schema):
     """Tool use system prompt tokens."""
 
 
-class ChatCompletionModel(BaseModelConfig):
-    """Chat and completion models with comprehensive pricing and capability support."""
+class TextGenerationModel(BaseModelConfig):
+    """Base for text generation models (chat, completion, responses)."""
 
-    mode: Literal[ModelMode.CHAT, ModelMode.COMPLETION]
-    """Model operation mode."""
-
-    # Token limits (often required)
+    # Token limits
     max_input_tokens: int | None = Field(None, ge=0)
     """Maximum input tokens."""
 
     max_output_tokens: int | None = Field(None, ge=0)
     """Maximum output tokens."""
 
-    # Basic pricing (often required)
+    # Basic pricing
     input_cost_per_token: Decimal | None = Field(None, ge=0)
     """Cost per input token."""
 
     output_cost_per_token: Decimal | None = Field(None, ge=0)
     """Cost per output token."""
+
+    # Batch processing pricing
+    input_cost_per_token_batches: Decimal | None = Field(None, ge=0)
+    """Input cost per token for batch processing."""
+
+    output_cost_per_token_batches: Decimal | None = Field(None, ge=0)
+    """Output cost per token for batch processing."""
+
+    # Caching pricing
+    cache_read_input_token_cost: Decimal | None = Field(None, ge=0)
+    """Cache read input token cost."""
+
+    # Core capabilities
+    supports_function_calling: bool | None = None
+    """Whether model supports function calling."""
+
+    supports_parallel_function_calling: bool | None = None
+    """Whether model supports parallel function calling."""
+
+    supports_pdf_input: bool | None = None
+    """Whether model supports PDF input."""
+
+    supports_prompt_caching: bool | None = None
+    """Whether model supports prompt caching."""
+
+    supports_reasoning: bool | None = None
+    """Whether model supports reasoning."""
+
+    supports_response_schema: bool | None = None
+    """Whether model supports response schema."""
+
+    supports_system_messages: bool | None = None
+    """Whether model supports system messages."""
+
+    supports_tool_choice: bool | None = None
+    """Whether model supports tool choice."""
+
+    supports_vision: bool | None = None
+    """Whether model supports vision/image input."""
+
+    supports_native_streaming: bool | None = None
+    """Whether model supports native streaming."""
+
+    supports_web_search: bool | None = None
+    """Whether model supports web search."""
+
+    # API support
+    supported_endpoints: list[SupportedEndpoint] | None = None
+    """List of supported API endpoints."""
+
+    supported_modalities: list[SupportedModality] | None = None
+    """List of supported input modalities."""
+
+    supported_output_modalities: list[SupportedOutputModality] | None = None
+    """List of supported output modalities."""
+
+
+class ChatCompletionModel(TextGenerationModel):
+    """Chat and completion models with comprehensive pricing and capability support."""
+
+    mode: Literal[ModelMode.CHAT, ModelMode.COMPLETION]
+    """Model operation mode."""
 
     # Extended pricing options
     input_cost_per_token_above_200k_tokens: Decimal | None = Field(None, ge=0)
@@ -293,13 +352,6 @@ class ChatCompletionModel(BaseModelConfig):
     vector_store_cost_per_gb_per_day: Decimal | None = Field(None, ge=0)
     """Vector store cost per GB per day."""
 
-    # Batch processing pricing
-    input_cost_per_token_batches: Decimal | None = Field(None, ge=0)
-    """Input cost per token for batch processing."""
-
-    output_cost_per_token_batches: Decimal | None = Field(None, ge=0)
-    """Output cost per token for batch processing."""
-
     # Caching pricing
     cache_creation_input_token_cost: Decimal | None = Field(None, ge=0)
     """Cache creation input token cost."""
@@ -309,9 +361,6 @@ class ChatCompletionModel(BaseModelConfig):
 
     cache_creation_input_token_cost_above_1hr: Decimal | None = Field(None, ge=0)
     """Cache creation input token cost above 1 hour."""
-
-    cache_read_input_token_cost: Decimal | None = Field(None, ge=0)
-    """Cache read input token cost."""
 
     cache_read_input_token_cost_above_200k_tokens: Decimal | None = Field(None, ge=0)
     """Cache read input token cost above 200k tokens."""
@@ -403,30 +452,11 @@ class ChatCompletionModel(BaseModelConfig):
     """Maximum PDF size in MB."""
 
     # Core capabilities
-    supports_function_calling: bool | None = None
-    """Whether model supports function calling."""
-
-    supports_parallel_function_calling: bool | None = None
-    """Whether model supports parallel function calling."""
-
-    supports_tool_choice: bool | None = None
-    """Whether model supports tool choice."""
-
-    supports_response_schema: bool | None = None
-    """Whether model supports response schema."""
-
-    supports_system_messages: bool | None = None
-    """Whether model supports system messages."""
 
     supports_assistant_prefill: bool | None = None
     """Whether model supports assistant prefill."""
 
     # Advanced capabilities
-    supports_vision: bool | None = None
-    """Whether model supports vision/image input."""
-
-    supports_pdf_input: bool | None = None
-    """Whether model supports PDF input."""
 
     supports_audio_input: bool | None = None
     """Whether model supports audio input."""
@@ -440,33 +470,13 @@ class ChatCompletionModel(BaseModelConfig):
     supports_url_context: bool | None = None
     """Whether model supports URL context."""
 
-    supports_web_search: bool | None = None
-    """Whether model supports web search."""
-
     supports_computer_use: bool | None = None
     """Whether model supports computer use."""
-
-    supports_reasoning: bool | None = None
-    """Whether model supports reasoning."""
-
-    supports_prompt_caching: bool | None = None
-    """Whether model supports prompt caching."""
-
-    supports_native_streaming: bool | None = None
-    """Whether model supports native streaming."""
 
     supports_service_tier: bool | None = None
     """Whether model supports service tier selection."""
 
     # API support
-    supported_endpoints: list[SupportedEndpoint] | None = None
-    """List of supported API endpoints."""
-
-    supported_modalities: list[SupportedModality] | None = None
-    """List of supported input modalities."""
-
-    supported_output_modalities: list[SupportedOutputModality] | None = None
-    """List of supported output modalities."""
 
     supported_regions: list[SupportedRegion | str] | None = None
     """List of supported regions."""
@@ -820,80 +830,18 @@ class RerankModel(BaseModelConfig):
     """Output cost per token (usually 0)."""
 
 
-class ResponsesModel(BaseModelConfig):
+class ResponsesModel(TextGenerationModel):
     """Reasoning/responses models (like OpenAI o1 series)."""
 
     mode: Literal[ModelMode.RESPONSES]
     """Model operation mode."""
 
-    # Token limits
+    # Override token limits with stricter validation for responses models
     max_input_tokens: int | None = Field(None, gt=0)
     """Maximum input tokens."""
 
     max_output_tokens: int | None = Field(None, gt=0)
     """Maximum output tokens."""
-
-    # Pricing
-    input_cost_per_token: Decimal | None = Field(None, ge=0)
-    """Input cost per token."""
-
-    output_cost_per_token: Decimal | None = Field(None, ge=0)
-    """Output cost per token."""
-
-    # Caching support
-    cache_read_input_token_cost: Decimal | None = Field(None, ge=0)
-    """Cache read input token cost."""
-
-    # Batch processing pricing
-    input_cost_per_token_batches: Decimal | None = Field(None, ge=0)
-    """Input cost per token for batch processing."""
-
-    output_cost_per_token_batches: Decimal | None = Field(None, ge=0)
-    """Output cost per token for batch processing."""
-
-    # Capabilities (reasoning models typically support these)
-    supports_function_calling: bool | None = None
-    """Whether model supports function calling."""
-
-    supports_parallel_function_calling: bool | None = None
-    """Whether model supports parallel function calling."""
-
-    supports_pdf_input: bool | None = None
-    """Whether model supports PDF input."""
-
-    supports_prompt_caching: bool | None = None
-    """Whether model supports prompt caching."""
-
-    supports_reasoning: bool | None = None
-    """Whether model supports reasoning."""
-
-    supports_response_schema: bool | None = None
-    """Whether model supports response schema."""
-
-    supports_system_messages: bool | None = None
-    """Whether model supports system messages."""
-
-    supports_tool_choice: bool | None = None
-    """Whether model supports tool choice."""
-
-    supports_vision: bool | None = None
-    """Whether model supports vision/image input."""
-
-    supports_native_streaming: bool | None = None
-    """Whether model supports native streaming."""
-
-    supports_web_search: bool | None = None
-    """Whether model supports web search."""
-
-    # API support
-    supported_endpoints: list[SupportedEndpoint] | None = None
-    """List of supported API endpoints."""
-
-    supported_modalities: list[SupportedModality] | None = None
-    """List of supported input modalities."""
-
-    supported_output_modalities: list[SupportedOutputModality] | None = None
-    """List of supported output modalities."""
 
 
 class ModerationModel(BaseModelConfig):
