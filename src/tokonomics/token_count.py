@@ -24,11 +24,13 @@ def has_library(name: str) -> bool:
     return bool(find_spec(name))
 
 
-def count_tokens(
-    text: str | Sequence[str],
-    model: str | None = None,
-) -> int:
+def count_tokens(text: str | Sequence[str], model: str | None = None) -> int:
     """Count total number of tokens in text(s) with fallback strategies.
+
+    Uses following fallback order:
+    1. tiktoken (if available)
+    2. transformers (if available)
+    3. rough approximation
 
     Args:
         text: Single text or sequence of texts to count tokens for
@@ -36,12 +38,6 @@ def count_tokens(
 
     Returns:
         Total token count for all provided text(s)
-
-    Note:
-        Uses following fallback order:
-        1. tiktoken (if available)
-        2. transformers (if available)
-        3. rough approximation
     """
     # Try tiktoken first
     if has_library("tiktoken"):

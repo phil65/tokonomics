@@ -40,18 +40,6 @@ class TokenCosts:
 
 
 @dataclass(frozen=True, slots=True)
-class TokenLimits:
-    """Token limits for a model."""
-
-    total_tokens: int
-    """Maximum total tokens (input + output) supported"""
-    input_tokens: int
-    """Maximum input/prompt tokens supported"""
-    output_tokens: int
-    """Maximum output/completion tokens supported"""
-
-
-@dataclass(frozen=True, slots=True)
 class ModelCapabilities:
     """Capabilities of a model."""
 
