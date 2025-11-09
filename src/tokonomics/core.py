@@ -122,7 +122,7 @@ async def get_model_costs(
             if not (_is_numeric(input_cost) and _is_numeric(output_cost)):
                 continue
 
-            # Store with normalized case - convert floats to strings first for Decimal precision
+            # Store with normalized case
             all_costs[name.lower()] = ModelCosts(
                 input_cost_per_token=Decimal(str(input_cost)),
                 output_cost_per_token=Decimal(str(output_cost)),
