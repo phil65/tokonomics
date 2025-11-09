@@ -12,6 +12,8 @@ authors = [
 keywords = []
 classifiers = [
   "Development Status :: 4 - Beta",
+  "Framework :: Pydantic",
+  "Framework :: Pydantic :: 2",
   "Intended Audience :: Developers",
   "Operating System :: OS Independent",
   "Programming Language :: Python :: 3",
@@ -22,8 +24,7 @@ classifiers = [
   "Topic :: Documentation",
   "Topic :: Software Development",
   "Topic :: Utilities",
-  "Typing :: Typed","Framework :: Pydantic",
-      "Framework :: Pydantic :: 2",
+  "Typing :: Typed",
 ]
 dependencies = [
   "anyenv[httpx]>=0.3.2",
