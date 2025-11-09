@@ -31,6 +31,7 @@ if TYPE_CHECKING:
         "xai",
         "novita",
         "vercel-gateway",
+        "ollama",
     ],
 )
 async def test_provider_model_fetch(provider: ProviderType):
