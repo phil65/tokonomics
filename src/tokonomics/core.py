@@ -25,7 +25,12 @@ _cost_cache: dict[str, object] = {}
 
 # Cache timeout in seconds (24 hours)
 _CACHE_TIMEOUT = 86400
-_TESTING = os.getenv("PYTEST_CURRENT_TEST")  # Flag to disable caching during tests
+
+
+def _is_testing() -> bool:
+    """Check if we're running in a test environment."""
+    return bool(os.getenv("PYTEST_CURRENT_TEST"))
+
 
 LITELLM_PRICES_URL = "https://raw.githubusercontent.com/BerriAI/litellm/refs/heads/main/model_prices_and_context_window.json"
 
@@ -93,7 +98,7 @@ async def get_model_costs(
         logger.debug("Downloading pricing data from LiteLLM...")
         data: dict[str, Any] = await get_json(
             LITELLM_PRICES_URL,
-            cache=not _TESTING,
+            cache=not _is_testing(),
             cache_ttl=_CACHE_TIMEOUT,
             return_type=dict,
         )
@@ -117,10 +122,10 @@ async def get_model_costs(
             if not (_is_numeric(input_cost) and _is_numeric(output_cost)):
                 continue
 
-            # Store with normalized case
+            # Store with normalized case - convert floats to strings first for Decimal precision
             all_costs[name.lower()] = ModelCosts(
-                input_cost_per_token=Decimal(input_cost),
-                output_cost_per_token=Decimal(output_cost),
+                input_cost_per_token=Decimal(str(input_cost)),
+                output_cost_per_token=Decimal(str(output_cost)),
             )
 
         logger.debug("Extracted costs for %d models", len(all_costs))
@@ -218,7 +223,7 @@ async def get_available_models(
         logger.debug("Downloading model data from LiteLLM...")
         data: dict[str, Any] = await get_json(
             LITELLM_PRICES_URL,
-            cache=not _TESTING,
+            cache=not _is_testing(),
             cache_ttl=_CACHE_TIMEOUT,
             return_type=dict,
         )
@@ -268,7 +273,7 @@ async def get_model_capabilities(
         logger.debug("Downloading model data from LiteLLM...")
         data: dict[str, Any] = await get_json(
             LITELLM_PRICES_URL,
-            cache=not _TESTING,
+            cache=not _is_testing(),
             cache_ttl=_CACHE_TIMEOUT,
             return_type=dict,
         )

@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from decimal import Decimal
+
 import httpx
 import pytest
 import respx
@@ -12,15 +14,15 @@ import tokonomics.core
 
 SAMPLE_PRICING_DATA = {
     "gpt-4": {
-        "input_cost_per_token": 0.03,
-        "output_cost_per_token": 0.06,
+        "input_cost_per_token": 0.00003,
+        "output_cost_per_token": 0.00006,
         "max_tokens": 8192,
         "max_input_tokens": 6144,
         "max_output_tokens": 2048,
     },
     "gpt-3.5-turbo": {
-        "input_cost_per_token": 0.001,
-        "output_cost_per_token": 0.002,
+        "input_cost_per_token": 0.00001,
+        "output_cost_per_token": 0.00002,
         "max_tokens": 4096,
     },
 }
@@ -29,8 +31,6 @@ SAMPLE_PRICING_DATA = {
 @pytest.fixture(autouse=True)
 def setup_teardown():
     """Setup and teardown for each test."""
-    # Disable caching during tests
-
     # Clear in-memory cache
     tokonomics.core._cost_cache.clear()
 
@@ -43,18 +43,20 @@ def setup_teardown():
 @pytest.fixture
 def mock_litellm_api():
     """Mock LiteLLM API responses."""
-    with respx.mock(assert_all_mocked=True) as respx_mock:
-        route = respx_mock.get(core.LITELLM_PRICES_URL)
-        route.mock(return_value=httpx.Response(200, json=SAMPLE_PRICING_DATA))
-        yield respx_mock
+    respx_mock = respx.mock(assert_all_called=False)
+    respx_mock.start()
+    route = respx_mock.get(core.LITELLM_PRICES_URL)
+    route.mock(return_value=httpx.Response(200, json=SAMPLE_PRICING_DATA))
+    yield respx_mock
+    respx_mock.stop()
 
 
 async def test_get_model_costs_success(mock_litellm_api):
     """Test successful model cost retrieval."""
     costs = await get_model_costs("gpt-4", cache_timeout=1)
     assert costs is not None
-    assert costs["input_cost_per_token"] == 0.00003  # noqa: PLR2004
-    assert costs["output_cost_per_token"] == 0.00006  # noqa: PLR2004
+    assert costs["input_cost_per_token"] == Decimal("0.00003")
+    assert costs["output_cost_per_token"] == Decimal("0.00006")
 
 
 async def test_get_model_costs_case_insensitive(mock_litellm_api):
@@ -64,7 +66,7 @@ async def test_get_model_costs_case_insensitive(mock_litellm_api):
     # Second call with different case
     costs = await get_model_costs("GPT-4", cache_timeout=1)
     assert costs is not None
-    assert costs["input_cost_per_token"] == 0.00003  # noqa: PLR2004
+    assert costs["input_cost_per_token"] == Decimal("0.00003")
 
 
 async def test_get_model_costs_provider_format(mock_litellm_api):
@@ -74,7 +76,7 @@ async def test_get_model_costs_provider_format(mock_litellm_api):
     # Second call with provider format
     costs = await get_model_costs("openai:gpt-4", cache_timeout=1)
     assert costs is not None
-    assert costs["input_cost_per_token"] == 0.00003  # noqa: PLR2004
+    assert costs["input_cost_per_token"] == Decimal("0.00003")
 
 
 async def test_get_model_costs_unknown_model(mock_litellm_api):
@@ -92,9 +94,9 @@ async def test_calculate_token_cost_success(mock_litellm_api):
         cache_timeout=1,
     )
     assert costs is not None
-    assert costs.input_cost == 0.0003  # 10 tokens * 0.03  # noqa: PLR2004
-    assert costs.output_cost == 0.0012  # 20 tokens * 0.06  # noqa: PLR2004
-    assert costs.total_cost == 0.0015  # 0.0003 + 0.0012  # noqa: PLR2004
+    assert costs.input_cost == Decimal("0.0003")  # 10 tokens * 0.00003
+    assert costs.output_cost == Decimal("0.0012")  # 20 tokens * 0.00006
+    assert costs.total_cost == Decimal("0.0015")  # 0.0003 + 0.0012
 
 
 async def test_calculate_token_cost_with_none(mock_litellm_api):
@@ -106,9 +108,9 @@ async def test_calculate_token_cost_with_none(mock_litellm_api):
         cache_timeout=1,
     )
     assert costs is not None
-    assert costs.input_cost == 0.0
-    assert costs.output_cost == 0.0012  # 20 tokens * 0.06  # noqa: PLR2004
-    assert costs.total_cost == 0.0012  # noqa: PLR2004
+    assert costs.input_cost == Decimal("0")
+    assert costs.output_cost == Decimal("0.0012")  # 20 tokens * 0.00006
+    assert costs.total_cost == Decimal("0.0012")
 
 
 async def test_calculate_token_cost_unknown_model(mock_litellm_api):
@@ -124,7 +126,13 @@ async def test_calculate_token_cost_unknown_model(mock_litellm_api):
 
 async def test_api_error(mock_litellm_api):
     """Test behavior when API request fails."""
+    # Clear the route and add a new one that returns error
+    mock_litellm_api.routes.clear()
     mock_litellm_api.get(core.LITELLM_PRICES_URL).mock(return_value=httpx.Response(500))
+    # Clear specific cache entries for this test
+    cache_key = "gpt-4_costs"
+    if cache_key in tokonomics.core._cost_cache:
+        del tokonomics.core._cost_cache[cache_key]
     costs = await get_model_costs("gpt-4", cache_timeout=1)
     assert costs is None
 

@@ -50,8 +50,8 @@ async def test_get_model_costs_handles_non_numeric_values(
         # Test model with longer float values
         float_costs = await get_model_costs("float-model")
         assert float_costs == ModelCosts(
-            input_cost_per_token=0.0015,
-            output_cost_per_token=0.002,
+            input_cost_per_token=Decimal("0.001500"),
+            output_cost_per_token=Decimal("0.002000"),
         )
 
         # Test model with missing cost fields
