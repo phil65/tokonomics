@@ -22,13 +22,16 @@ classifiers = [
   "Topic :: Documentation",
   "Topic :: Software Development",
   "Topic :: Utilities",
-  "Typing :: Typed",
+  "Typing :: Typed","Framework :: Pydantic",
+      "Framework :: Pydantic :: 2",
 ]
 dependencies = [
   "anyenv[httpx]>=0.3.2",
   "httpx>=0.27.2",
   # Only add below (Copier)
   "platformdirs>=4.3.6",
+  "pydantic",
+  "schemez",
 ]
 
 [project.urls]
@@ -92,7 +95,7 @@ disable_error_code = ["misc", "import"]
 pretty = true
 check_untyped_defs = true
 exclude = ["venv/", ".venv/", "tests/"]
-plugins = []
+plugins = ["pydantic.mypy"]
 
 [tool.pyright]
 venvPath = "."
