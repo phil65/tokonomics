@@ -21,6 +21,7 @@ from tokonomics.model_discovery.xai_provider import XAIProvider
 from tokonomics.model_discovery.novita_provider import NovitaProvider
 from tokonomics.model_discovery.vercel_gateway_provider import VercelGatewayProvider
 from tokonomics.model_discovery.modelsdev_provider import ModelsDevProvider
+from tokonomics.model_discovery.ollama_provider import OllamaProvider
 # from tokonomics.model_discovery.cerebras_provider import CerebrasProvider
 # from tokonomics.model_discovery.cohere_provider import CohereProvider
 
@@ -63,6 +64,7 @@ ProviderType = Literal[
     "cortecs",
     "azure",
     "fireworks-ai",
+    "ollama",
 ]
 
 
@@ -86,6 +88,7 @@ _PROVIDER_MAP: dict[ProviderType, Callable[[], ModelProvider]] = {
     "azure": AzureProvider,
     "chutes": ChutesProvider,
     "cortecs": CortecsProvider,
+    "ollama": OllamaProvider,
 }
 
 
@@ -237,6 +240,7 @@ __all__ = [
     "ModelPricing",
     "ModelProvider",
     "NovitaProvider",
+    "OllamaProvider",
     "OpenAIProvider",
     "OpenRouterProvider",
     "ProviderType",
