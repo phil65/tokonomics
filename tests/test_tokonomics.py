@@ -53,8 +53,8 @@ async def test_get_model_costs_success(mock_litellm_api):
     """Test successful model cost retrieval."""
     costs = await get_model_costs("gpt-4", cache_timeout=1)
     assert costs is not None
-    assert costs["input_cost_per_token"] == 0.03  # noqa: PLR2004
-    assert costs["output_cost_per_token"] == 0.06  # noqa: PLR2004
+    assert costs["input_cost_per_token"] == 0.00003  # noqa: PLR2004
+    assert costs["output_cost_per_token"] == 0.00006  # noqa: PLR2004
 
 
 async def test_get_model_costs_case_insensitive(mock_litellm_api):
@@ -64,7 +64,7 @@ async def test_get_model_costs_case_insensitive(mock_litellm_api):
     # Second call with different case
     costs = await get_model_costs("GPT-4", cache_timeout=1)
     assert costs is not None
-    assert costs["input_cost_per_token"] == 0.03  # noqa: PLR2004
+    assert costs["input_cost_per_token"] == 0.00003  # noqa: PLR2004
 
 
 async def test_get_model_costs_provider_format(mock_litellm_api):
@@ -74,7 +74,7 @@ async def test_get_model_costs_provider_format(mock_litellm_api):
     # Second call with provider format
     costs = await get_model_costs("openai:gpt-4", cache_timeout=1)
     assert costs is not None
-    assert costs["input_cost_per_token"] == 0.03  # noqa: PLR2004
+    assert costs["input_cost_per_token"] == 0.00003  # noqa: PLR2004
 
 
 async def test_get_model_costs_unknown_model(mock_litellm_api):
@@ -92,9 +92,9 @@ async def test_calculate_token_cost_success(mock_litellm_api):
         cache_timeout=1,
     )
     assert costs is not None
-    assert costs.input_cost == 0.3  # 10 tokens * 0.03  # noqa: PLR2004
-    assert costs.output_cost == 1.2  # 20 tokens * 0.06  # noqa: PLR2004
-    assert costs.total_cost == 1.5  # 0.3 + 1.2  # noqa: PLR2004
+    assert costs.input_cost == 0.0003  # 10 tokens * 0.03  # noqa: PLR2004
+    assert costs.output_cost == 0.0012  # 20 tokens * 0.06  # noqa: PLR2004
+    assert costs.total_cost == 0.0015  # 0.0003 + 0.0012  # noqa: PLR2004
 
 
 async def test_calculate_token_cost_with_none(mock_litellm_api):
@@ -107,8 +107,8 @@ async def test_calculate_token_cost_with_none(mock_litellm_api):
     )
     assert costs is not None
     assert costs.input_cost == 0.0
-    assert costs.output_cost == 1.2  # 20 tokens * 0.06  # noqa: PLR2004
-    assert costs.total_cost == 1.2  # noqa: PLR2004
+    assert costs.output_cost == 0.0012  # 20 tokens * 0.06  # noqa: PLR2004
+    assert costs.total_cost == 0.0012  # noqa: PLR2004
 
 
 async def test_calculate_token_cost_unknown_model(mock_litellm_api):

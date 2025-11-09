@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from decimal import Decimal
 import os
 import pathlib
 from typing import Any, cast
@@ -118,8 +119,8 @@ async def get_model_costs(
 
             # Store with normalized case
             all_costs[name.lower()] = ModelCosts(
-                input_cost_per_token=float(input_cost),
-                output_cost_per_token=float(output_cost),
+                input_cost_per_token=Decimal(input_cost),
+                output_cost_per_token=Decimal(output_cost),
             )
 
         logger.debug("Extracted costs for %d models", len(all_costs))
@@ -184,10 +185,7 @@ async def calculate_token_cost(
     input_cost = input_count * costs["input_cost_per_token"]
     output_cost = output_count * costs["output_cost_per_token"]
 
-    token_costs = TokenCosts(
-        input_cost=float(input_cost),
-        output_cost=float(output_cost),
-    )
+    token_costs = TokenCosts(input_cost=input_cost, output_cost=output_cost)
 
     logger.debug(
         "Cost calculation - prompt: $%.6f, completion: $%.6f, total: $%.6f",

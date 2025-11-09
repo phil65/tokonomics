@@ -3,14 +3,18 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import TypedDict
+from typing import TYPE_CHECKING, TypedDict
+
+
+if TYPE_CHECKING:
+    from decimal import Decimal
 
 
 class ModelCosts(TypedDict):
     """Cost information for a model."""
 
-    input_cost_per_token: float
-    output_cost_per_token: float
+    input_cost_per_token: Decimal
+    output_cost_per_token: Decimal
 
 
 class TokenUsage(TypedDict):
@@ -28,13 +32,13 @@ class TokenUsage(TypedDict):
 class TokenCosts:
     """Detailed breakdown of token costs."""
 
-    input_cost: float
+    input_cost: Decimal
     """Cost for prompt tokens"""
-    output_cost: float
+    output_cost: Decimal
     """Cost for completion tokens"""
 
     @property
-    def total_cost(self) -> float:
+    def total_cost(self) -> Decimal:
         """Calculate total cost as sum of input and output costs."""
         return self.input_cost + self.output_cost
 

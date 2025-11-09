@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from decimal import Decimal
 from unittest.mock import AsyncMock, patch
 
 import pytest
@@ -38,8 +39,8 @@ async def test_get_model_costs_handles_non_numeric_values(
         # Test valid model
         valid_costs = await get_model_costs("valid-model")
         assert valid_costs == ModelCosts(
-            input_cost_per_token=0.001,
-            output_cost_per_token=0.002,
+            input_cost_per_token=Decimal("0.001"),
+            output_cost_per_token=Decimal("0.002"),
         )
 
         # Test model with non-numeric values
