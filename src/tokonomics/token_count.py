@@ -13,14 +13,7 @@ if TYPE_CHECKING:
 
 @lru_cache
 def has_library(name: str) -> bool:
-    """Check if a Python package is available.
-
-    Args:
-        name: Name of the package to check
-
-    Returns:
-        True if package is available, False otherwise
-    """
+    """Check if a Python package is available."""
     return bool(find_spec(name))
 
 
