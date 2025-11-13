@@ -77,7 +77,7 @@ def generate_init_file(provider_types: dict[str, str], output_dir: Path) -> None
     if type_names:
         formatted_types = [type_names[0]]  # First type without pipe
         for type_name in type_names[1:]:
-            formatted_types.append(f"| {type_name}")
+            formatted_types.append(f"| {type_name}")  # noqa: PERF401
         union_types = "\n    ".join(formatted_types)
     else:
         union_types = ""

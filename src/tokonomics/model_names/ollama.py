@@ -9,8 +9,6 @@ from __future__ import annotations
 from typing import Literal
 
 
-OllamaModels = Literal[
-    "ollama:qwen3:4b",
-]
+OllamaModels = Literal["ollama:qwen3:4b",]
 
 __all__ = ["OllamaModels"]
