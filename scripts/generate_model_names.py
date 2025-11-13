@@ -73,7 +73,14 @@ def generate_init_file(provider_types: dict[str, str], output_dir: Path) -> None
         type_names.append(type_name)
 
     imports_str = "\n".join(imports)
-    union_types = " |\n    ".join(type_names)
+    # Fix formatting to put pipe at beginning of line (except first)
+    if type_names:
+        formatted_types = [type_names[0]]  # First type without pipe
+        for type_name in type_names[1:]:
+            formatted_types.append(f"| {type_name}")
+        union_types = "\n    ".join(formatted_types)
+    else:
+        union_types = ""
     all_exports = [f'"{name}"' for name in type_names] + ['"ModelName"']
     all_exports.sort()  # Sort alphabetically
     all_exports_str = ",\n    ".join(all_exports)

@@ -38,6 +38,7 @@ from tokonomics.model_discovery import (
 )
 from tokonomics.model_discovery.copilot_provider import CopilotTokenManager
 from tokonomics.token_count import count_tokens
+from tokonomics.model_names import ModelName
 
 
 __all__ = [
@@ -47,6 +48,7 @@ __all__ = [
     "MistralProvider",
     "ModelCosts",
     "ModelInfo",
+    "ModelName",
     "ModelPricing",
     "ModelProvider",
     "OpenAIProvider",

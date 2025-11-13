@@ -24,20 +24,20 @@ from .zai import ZaiModels
 
 # Union of all provider model types
 ModelName = (
-    AnthropicModels |
-    CerebrasModels |
-    CometModels |
-    DeepseekModels |
-    GeminiModels |
-    GroqModels |
-    MistralModels |
-    MoonshotaiModels |
-    OllamaModels |
-    OpenaiModels |
-    OpenrouterModels |
-    Vercel_GatewayModels |
-    XaiModels |
-    ZaiModels
+    AnthropicModels
+    | CerebrasModels
+    | CometModels
+    | DeepseekModels
+    | GeminiModels
+    | GroqModels
+    | MistralModels
+    | MoonshotaiModels
+    | OllamaModels
+    | OpenaiModels
+    | OpenrouterModels
+    | Vercel_GatewayModels
+    | XaiModels
+    | ZaiModels
 )
 
 __all__ = [
