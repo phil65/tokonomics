@@ -1,6 +1,6 @@
 [project]
 name = "tokonomics"
-version = "1.2.2"
+version = "1.2.3"
 description = "Calcuate costs for LLM Usage based on token count"
 readme = "README.md"
 requires-python = ">=3.13"
