@@ -18,6 +18,7 @@ from tokonomics.model_discovery.gemini_provider import GeminiProvider
 from tokonomics.model_discovery.deepseek_provider import DeepSeekProvider
 from tokonomics.model_discovery.requesty_provider import RequestyProvider
 from tokonomics.model_discovery.xai_provider import XAIProvider
+from tokonomics.model_discovery.comet_provider import CometProvider
 from tokonomics.model_discovery.novita_provider import NovitaProvider
 from tokonomics.model_discovery.vercel_gateway_provider import VercelGatewayProvider
 from tokonomics.model_discovery.modelsdev_provider import ModelsDevProvider
@@ -34,6 +35,8 @@ FireworksProvider = partial(ModelsDevProvider, provider="fireworks-ai")
 AzureProvider = partial(ModelsDevProvider, provider="azure")
 ChutesProvider = partial(ModelsDevProvider, provider="chutes")
 CortecsProvider = partial(ModelsDevProvider, provider="cortecs")
+MoonshotProvider = partial(ModelsDevProvider, provider="moonshotai")
+ZAIProvider = partial(ModelsDevProvider, provider="zai")
 
 
 if TYPE_CHECKING:
@@ -58,6 +61,7 @@ ProviderType = Literal[
     "deepseek",
     "requesty",
     "xai",
+    "comet",
     "novita",
     "vercel-gateway",
     "chutes",
@@ -65,6 +69,8 @@ ProviderType = Literal[
     "azure",
     "fireworks-ai",
     "ollama",
+    "moonshotai",
+    "zai",
 ]
 
 
@@ -82,6 +88,7 @@ _PROVIDER_MAP: dict[ProviderType, Callable[[], ModelProvider]] = {
     "deepseek": DeepSeekProvider,
     "requesty": RequestyProvider,
     "xai": XAIProvider,
+    "comet": CometProvider,
     "novita": NovitaProvider,
     "vercel-gateway": VercelGatewayProvider,
     "fireworks-ai": FireworksProvider,
@@ -89,6 +96,8 @@ _PROVIDER_MAP: dict[ProviderType, Callable[[], ModelProvider]] = {
     "chutes": ChutesProvider,
     "cortecs": CortecsProvider,
     "ollama": OllamaProvider,
+    "zai": ZAIProvider,
+    "moonshotai": MoonshotProvider,
 }
 
 
@@ -230,6 +239,7 @@ __all__ = [
     "AnthropicProvider",
     "CerebrasProvider",
     "CohereProvider",
+    "CometProvider",
     "CopilotProvider",
     "DeepSeekProvider",
     "GeminiProvider",

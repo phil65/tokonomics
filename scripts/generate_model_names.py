@@ -66,7 +66,8 @@ def generate_init_file(provider_types: dict[str, str], output_dir: Path) -> None
     imports = []
     type_names = []
 
-    for provider, type_name in provider_types.items():
+    # Sort providers to ensure consistent import order
+    for provider, type_name in sorted(provider_types.items()):
         module_name = provider.replace("-", "_").replace(".", "_").lower()
         imports.append(f"from .{module_name} import {type_name}")
         type_names.append(type_name)
