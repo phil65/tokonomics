@@ -1,11 +1,7 @@
 """Models.dev provider - unified model discovery from models.dev API."""
 
-# TODO: Evaluate adding in-memory cache layer with asyncio.Lock to prevent duplicate
-# network requests for concurrent calls (even 304 responses).
-
 from __future__ import annotations
 
-import asyncio
 import logging
 import os
 from typing import TYPE_CHECKING, Any, Literal
@@ -78,9 +74,6 @@ ModelsDevProviderType = Literal[
 
 class ModelsDevProvider(ModelProvider):
     """Models.dev API provider - aggregates models from all providers."""
-
-    # Class-level lock to prevent duplicate concurrent requests
-    _cache_lock = asyncio.Lock()
 
     def __init__(self, provider: ModelsDevProviderType | None = None):
         super().__init__()
@@ -181,23 +174,21 @@ class ModelsDevProvider(ModelProvider):
         )
 
     async def get_models(self) -> list[ModelInfo]:
-        """Fetch all models from models.dev API with concurrent request deduplication."""
+        """Fetch all models from models.dev API."""
         from anyenv import HttpError, get_json
 
-        # Use class-level lock to prevent duplicate concurrent requests
-        async with self._cache_lock:
-            logger.debug("Fetching models from models.dev API")
-            data = await get_json(
-                f"{self.base_url}/api.json",
-                headers=self.headers,
-                params=self.params,
-                cache=True,
-                return_type=dict,
-            )
+        logger.debug("Fetching models from models.dev API")
+        data = await get_json(
+            f"{self.base_url}/api.json",
+            headers=self.headers,
+            params=self.params,
+            cache=True,
+            return_type=dict,
+        )
 
-            if not isinstance(data, dict):
-                msg = "Invalid response format from models.dev"
-                raise RuntimeError(msg)  # noqa: TRY004
+        if not isinstance(data, dict):
+            msg = "Invalid response format from models.dev"
+            raise RuntimeError(msg)  # noqa: TRY004
 
         try:
             models = []
