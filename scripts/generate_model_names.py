@@ -119,7 +119,7 @@ def main() -> None:
 
     # Fetch models with limited concurrency to avoid overwhelming APIs
     models = get_all_models_sync(max_workers=3)
-
+    models = [m for m in models if m.provider != "ollama"]
     if not models:
         logger.error("No models found")
         return
