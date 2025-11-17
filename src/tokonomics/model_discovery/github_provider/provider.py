@@ -161,7 +161,7 @@ class GitHubProvider(ModelProvider):
 if __name__ == "__main__":
     import asyncio
 
-    async def main():
+    async def main() -> None:
         provider = GitHubProvider()
         models = await provider.get_models()
         for model in models:

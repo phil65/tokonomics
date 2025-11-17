@@ -75,7 +75,7 @@ ModelsDevProviderType = Literal[
 class ModelsDevProvider(ModelProvider):
     """Models.dev API provider - aggregates models from all providers."""
 
-    def __init__(self, provider: ModelsDevProviderType | None = None):
+    def __init__(self, provider: ModelsDevProviderType | None = None) -> None:
         super().__init__()
         self.base_url = "https://models.dev"
         self.headers = {}
@@ -254,7 +254,7 @@ class ModelsDevProvider(ModelProvider):
 if __name__ == "__main__":
     import asyncio
 
-    async def main():
+    async def main() -> None:
         # Test all providers
         provider = ModelsDevProvider()
         models = await provider.get_models()

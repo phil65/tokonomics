@@ -62,7 +62,7 @@ class NovitaProvider(ModelProvider):
 if __name__ == "__main__":
     import asyncio
 
-    async def main():
+    async def main() -> None:
         provider = NovitaProvider()
         models = await provider.get_models()
         for model in models:

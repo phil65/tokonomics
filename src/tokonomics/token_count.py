@@ -48,7 +48,7 @@ def count_tokens(text: str | Sequence[str], model: str | None = None) -> int:
 
     # Try transformers as fallback
     if has_library("transformers"):
-        from transformers import AutoTokenizer  # pyright: ignore[reportMissingImports]
+        from transformers import AutoTokenizer  # type: ignore[import-not-found]
 
         tokenizer = AutoTokenizer.from_pretrained("facebook/opt-125m")
 

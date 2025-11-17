@@ -12,7 +12,7 @@ from tokonomics.model_discovery.model_info import Modality, ModelInfo, ModelPric
 class OpenRouterProvider(ModelProvider):
     """OpenRouter API provider."""
 
-    def __init__(self, api_key: str | None = None):
+    def __init__(self, api_key: str | None = None) -> None:
         super().__init__()
         self.api_key = api_key or os.environ.get("OPENROUTER_API_KEY")
         self.base_url = "https://openrouter.ai/api/v1"

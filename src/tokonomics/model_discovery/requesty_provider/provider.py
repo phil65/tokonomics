@@ -16,7 +16,7 @@ if TYPE_CHECKING:
 class RequestyProvider(ModelProvider):
     """Requesty API provider."""
 
-    def __init__(self, api_key: str | None = None):
+    def __init__(self, api_key: str | None = None) -> None:
         super().__init__()
         self.api_key = api_key or os.environ.get("REQUESTY_API_KEY")
 

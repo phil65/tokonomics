@@ -32,7 +32,7 @@ def get_token_headers(github_oauth_token: str) -> dict[str, str]:
 class CopilotTokenManager:
     """Manager for GitHub Copilot API tokens."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         self._github_oauth_token = os.environ.get("GITHUB_COPILOT_API_KEY")
         self._copilot_token = None
         self._token_expires_at = datetime.now()

@@ -24,7 +24,7 @@ COPILOT_EXCLUDED_MODELS = set[str]()  # "o1"
 class CopilotProvider(ModelProvider):
     """GitHub Copilot API provider."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__()
         self._token_manager = token_manager
         self.base_url = self._token_manager._api_endpoint
@@ -136,7 +136,7 @@ if __name__ == "__main__":
         level=logging.DEBUG, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
     )
 
-    async def test_provider():
+    async def test_provider() -> None:
         try:
             # Create provider
             provider = CopilotProvider()

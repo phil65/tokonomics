@@ -351,7 +351,7 @@ async def get_model_capabilities(
 if __name__ == "__main__":
     import asyncio
 
-    async def main():
+    async def main() -> None:
         # Example usage
         model_name = "openrouter:openai/gpt-5-nano"
         limits = await get_model_costs(model_name)

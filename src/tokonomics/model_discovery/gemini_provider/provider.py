@@ -139,7 +139,7 @@ class GeminiProvider(ModelProvider):
 if __name__ == "__main__":
     import asyncio
 
-    async def main():
+    async def main() -> None:
         provider = GeminiProvider()
         models = await provider.get_models()
         for model in models:

@@ -16,7 +16,7 @@ if TYPE_CHECKING:
 class OllamaProvider(ModelProvider):
     """Ollama local API provider."""
 
-    def __init__(self, base_url: str = "http://localhost:11434"):
+    def __init__(self, base_url: str = "http://localhost:11434") -> None:
         super().__init__()
         self.base_url = base_url
         self.headers = {}

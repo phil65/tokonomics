@@ -41,7 +41,7 @@ class GroqProvider(ModelProvider):
 
 if __name__ == "__main__":
 
-    async def main():
+    async def main() -> None:
         provider = GroqProvider()
         models = await provider.get_models()
         print(models)
