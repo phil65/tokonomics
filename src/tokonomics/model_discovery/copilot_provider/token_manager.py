@@ -6,6 +6,7 @@ from datetime import datetime, timedelta
 import logging
 import os
 import threading
+from typing import Any
 
 
 logger = logging.getLogger(__name__)
@@ -97,7 +98,7 @@ class CopilotTokenManager:
             assert self._copilot_token, "Copilot token is missing"
             return self._copilot_token
 
-    def handle_token_response(self, data):
+    def handle_token_response(self, data: dict[str, Any]) -> None:
         self._copilot_token = data.get("token")
         if not self._copilot_token:
             msg = "No token found in response from Copilot API"
