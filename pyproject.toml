@@ -42,6 +42,9 @@ Documentation = "https://phil65.github.io/tokonomics/"
 Issues = "https://github.com/phil65/tokonomics/issues"
 Source = "https://github.com/phil65/tokonomics"
 
+[project.optional-dependencies]
+tiktoken = ["tiktoken"]
+
 [dependency-groups]
 dev = [
   "devtools",
