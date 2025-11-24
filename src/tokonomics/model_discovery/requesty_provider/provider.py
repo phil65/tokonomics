@@ -41,12 +41,8 @@ class RequestyProvider(ModelProvider):
         pricing = ModelPricing(
             prompt=float(data["input_price"]) if data.get("input_price") else None,
             completion=float(data["output_price"]) if data.get("output_price") else None,
-            input_cache_read=float(data["cached_price"])
-            if data.get("cached_price")
-            else None,
-            input_cache_write=float(data["caching_price"])
-            if data.get("caching_price")
-            else None,
+            input_cache_read=float(data["cached_price"]) if data.get("cached_price") else None,
+            input_cache_write=float(data["caching_price"]) if data.get("caching_price") else None,
         )
 
         # Build metadata for additional capabilities
@@ -67,9 +63,7 @@ class RequestyProvider(ModelProvider):
             description=str(data.get("description")) if data.get("description") else None,
             pricing=pricing,
             owned_by=str(data.get("owned_by")) if data.get("owned_by") else None,
-            context_window=int(data["context_window"])
-            if data.get("context_window")
-            else None,
+            context_window=int(data["context_window"]) if data.get("context_window") else None,
             max_output_tokens=int(data["max_output_tokens"])
             if data.get("max_output_tokens")
             else None,

@@ -127,13 +127,8 @@ class ModelInfo:
                 lines.append(f"Request cost: ${self.pricing.request:.6f}/request")
             if self.pricing.web_search is not None and self.pricing.web_search > 0:
                 lines.append(f"Web search cost: ${self.pricing.web_search:.6f}")
-            if (
-                self.pricing.internal_reasoning is not None
-                and self.pricing.internal_reasoning > 0
-            ):
-                lines.append(
-                    f"Internal reasoning cost: ${self.pricing.internal_reasoning:.6f}"
-                )
+            if self.pricing.internal_reasoning is not None and self.pricing.internal_reasoning > 0:
+                lines.append(f"Internal reasoning cost: ${self.pricing.internal_reasoning:.6f}")
 
         if self.input_modalities and self.input_modalities != {"text"}:
             lines.append(f"Input modalities: {', '.join(self.input_modalities)}")
@@ -153,9 +148,7 @@ class ModelInfo:
             lines.append("\nAdditional Information:")
             for key, value in self.metadata.items():
                 if key == "supported_parameters" and value:
-                    lines.append(
-                        f"- Supported parameters: {', '.join(str(v) for v in value)}"
-                    )
+                    lines.append(f"- Supported parameters: {', '.join(str(v) for v in value)}")
                 elif key == "hugging_face_id" and value:
                     lines.append(f"- HuggingFace ID: {value}")
                 elif key == "tokenizer" and value:

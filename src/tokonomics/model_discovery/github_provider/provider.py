@@ -22,9 +22,7 @@ def get_token_from_gh_cli() -> str | None:
     import subprocess
 
     try:
-        result = subprocess.run(
-            ["gh", "auth", "token"], capture_output=True, text=True, check=True
-        )
+        result = subprocess.run(["gh", "auth", "token"], capture_output=True, text=True, check=True)
         token = result.stdout.strip()
     except (subprocess.SubprocessError, FileNotFoundError) as e:
         logger.debug("Failed to get GitHub token from gh CLI: %s", e)
@@ -134,9 +132,7 @@ class GitHubProvider(ModelProvider):
 
         # Use name as ID as it's more consistent with other providers
         model_id = data.get("name", "")
-        model_name = (
-            data.get("friendly_name", "") or data.get("displayName", "") or model_id
-        )
+        model_name = data.get("friendly_name", "") or data.get("displayName", "") or model_id
 
         return ModelInfo(
             id=model_id,

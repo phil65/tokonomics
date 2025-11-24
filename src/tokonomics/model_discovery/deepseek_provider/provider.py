@@ -35,9 +35,7 @@ class DeepSeekProvider(ModelProvider):
             provider="deepseek",
             owned_by=str(data.get("owned_by")),
             description=str(data.get("description")) if "description" in data else None,
-            context_window=(
-                int(data["context_window"]) if "context_window" in data else None
-            ),
+            context_window=(int(data["context_window"]) if "context_window" in data else None),
         )
 
 

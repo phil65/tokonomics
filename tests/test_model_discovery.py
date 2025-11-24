@@ -48,9 +48,7 @@ async def test_provider_model_fetch(provider: ProviderType):
         provider_instance = provider_class()
 
         if not provider_instance.is_available():
-            pytest.skip(
-                f"Provider {provider} not available (no API key or other requirement)"
-            )
+            pytest.skip(f"Provider {provider} not available (no API key or other requirement)")
 
     except KeyError:
         pytest.skip(f"Provider {provider} not found in provider map")

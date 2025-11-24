@@ -123,9 +123,7 @@ class ModelsDevProvider(ModelProvider):
             cost = data["cost"]
             pricing = ModelPricing(
                 prompt=cost.get("input", 0) / 1_000_000 if "input" in cost else None,
-                completion=cost.get("output", 0) / 1_000_000
-                if "output" in cost
-                else None,
+                completion=cost.get("output", 0) / 1_000_000 if "output" in cost else None,
                 input_cache_read=cost.get("cache_read", 0) / 1_000_000
                 if "cache_read" in cost
                 else None,
@@ -158,9 +156,7 @@ class ModelsDevProvider(ModelProvider):
             is_embedding=is_embedding,
             input_modalities=input_modalities,
             output_modalities=output_modalities,
-            is_free=pricing is not None
-            and pricing.prompt == 0
-            and pricing.completion == 0,
+            is_free=pricing is not None and pricing.prompt == 0 and pricing.completion == 0,
             metadata={
                 "attachment": data.get("attachment", False),
                 "reasoning": data.get("reasoning", False),
@@ -194,10 +190,7 @@ class ModelsDevProvider(ModelProvider):
             models = []
             for provider_id, provider_data in data.items():
                 # Apply provider filter if specified
-                if (
-                    self.provider_filter is not None
-                    and provider_id != self.provider_filter
-                ):
+                if self.provider_filter is not None and provider_id != self.provider_filter:
                     continue
 
                 if not isinstance(provider_data, dict) or "models" not in provider_data:
@@ -238,11 +231,7 @@ class ModelsDevProvider(ModelProvider):
                 logger.info(
                     "Fetched %d models from %d providers via models.dev",
                     len(models),
-                    len([
-                        p
-                        for p in data
-                        if isinstance(data[p], dict) and "models" in data[p]
-                    ]),
+                    len([p for p in data if isinstance(data[p], dict) and "models" in data[p]]),
                 )
         except HttpError as e:
             msg = f"Failed to fetch models from models.dev: {e}"

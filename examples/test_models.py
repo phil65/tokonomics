@@ -37,9 +37,7 @@ def main():
         print(f"  {mode.value:20} {count:4d}")
 
     # Count by provider
-    provider_counts = Counter(
-        model.litellm_provider for model in registry.models.values()
-    )
+    provider_counts = Counter(model.litellm_provider for model in registry.models.values())
     print("\nTop 10 providers:")
     for provider, count in provider_counts.most_common(10):
         print(f"  {provider:25} {count:4d}")
@@ -65,20 +63,14 @@ def main():
             print(f"  Provider: {model_config.litellm_provider}")
 
             # Show type-specific fields
-            if isinstance(
-                model_config, (ChatCompletionModel, EmbeddingModel, ResponsesModel)
-            ):
+            if isinstance(model_config, (ChatCompletionModel, EmbeddingModel, ResponsesModel)):
                 if model_config.input_cost_per_token is not None:
                     print(f"  Input cost: ${model_config.input_cost_per_token:.8f}/token")
                 if model_config.output_cost_per_token is not None:
-                    print(
-                        f"  Output cost: ${model_config.output_cost_per_token:.8f}/token"
-                    )
+                    print(f"  Output cost: ${model_config.output_cost_per_token:.8f}/token")
             elif isinstance(model_config, AudioTranscriptionModel):
                 if model_config.input_cost_per_second is not None:
-                    print(
-                        f"  Input cost: ${model_config.input_cost_per_second:.6f}/second"
-                    )
+                    print(f"  Input cost: ${model_config.input_cost_per_second:.6f}/second")
 
             if isinstance(model_config, ChatCompletionModel):
                 print(f"  Function calling: {model_config.supports_function_calling}")
@@ -103,9 +95,7 @@ def main():
             1 for m in chat_models.values() if m.supports_function_calling
         ),
         "supports_vision": sum(1 for m in chat_models.values() if m.supports_vision),
-        "supports_reasoning": sum(
-            1 for m in chat_models.values() if m.supports_reasoning
-        ),
+        "supports_reasoning": sum(1 for m in chat_models.values() if m.supports_reasoning),
         "supports_prompt_caching": sum(
             1 for m in chat_models.values() if m.supports_prompt_caching
         ),

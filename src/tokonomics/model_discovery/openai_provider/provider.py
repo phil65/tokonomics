@@ -36,9 +36,7 @@ class OpenAIProvider(ModelProvider):
             owned_by=str(data.get("owned_by")),
             is_embedding="embedding" in str(data.get("id", "")),
             description=str(data.get("description")) if "description" in data else None,
-            context_window=(
-                int(data["context_window"]) if "context_window" in data else None
-            ),
+            context_window=(int(data["context_window"]) if "context_window" in data else None),
         )
 
 

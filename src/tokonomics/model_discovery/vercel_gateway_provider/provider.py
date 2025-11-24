@@ -25,10 +25,7 @@ class VercelGatewayProvider(ModelProvider):
         super().__init__()
         self.api_key = api_key or os.environ.get("AI_GATEWAY_API_KEY")
         if not self.api_key:
-            msg = (
-                "Vercel Gateway API key not found in parameters or "
-                "AI_GATEWAY_API_KEY env var"
-            )
+            msg = "Vercel Gateway API key not found in parameters or AI_GATEWAY_API_KEY env var"
             raise RuntimeError(msg)
 
         self.base_url = base_url or "https://ai-gateway.vercel.sh/v1/ai"
@@ -101,9 +98,7 @@ class VercelGatewayProvider(ModelProvider):
                 prompt=self._parse_price(pricing_data.get("input")),
                 completion=self._parse_price(pricing_data.get("output")),
                 input_cache_read=self._parse_price(pricing_data.get("cachedInputTokens")),
-                input_cache_write=self._parse_price(
-                    pricing_data.get("cacheCreationInputTokens")
-                ),
+                input_cache_write=self._parse_price(pricing_data.get("cacheCreationInputTokens")),
             )
 
         # Build metadata dictionary

@@ -51,9 +51,7 @@ class NovitaProvider(ModelProvider):
             name=str(data.get("title", data["id"])),
             provider="novita",
             description=str(data.get("description")) if data.get("description") else None,
-            context_window=int(data["context_size"])
-            if data.get("context_size")
-            else None,
+            context_window=int(data["context_size"]) if data.get("context_size") else None,
             pricing=pricing,
             metadata=metadata,
         )

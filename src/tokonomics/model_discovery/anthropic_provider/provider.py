@@ -36,9 +36,7 @@ class AnthropicProvider(ModelProvider):
             name=str(data.get("name", data["id"])),
             provider="anthropic",
             description=str(data.get("description")) if "description" in data else None,
-            context_window=(
-                int(data["context_window"]) if "context_window" in data else None
-            ),
+            context_window=(int(data["context_window"]) if "context_window" in data else None),
         )
 
 

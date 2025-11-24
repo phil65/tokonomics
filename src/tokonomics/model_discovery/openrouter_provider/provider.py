@@ -32,9 +32,7 @@ class OpenRouterProvider(ModelProvider):
         pricing = ModelPricing(
             prompt=float(data["pricing"]["prompt"]),
             completion=float(data["pricing"]["completion"]),
-            image=float(data["pricing"].get("image", 0))
-            if "image" in data["pricing"]
-            else None,
+            image=float(data["pricing"].get("image", 0)) if "image" in data["pricing"] else None,
             request=float(data["pricing"].get("request", 0))
             if "request" in data["pricing"]
             else None,

@@ -71,9 +71,7 @@ class ModelRegistry(Schema):
 
     def get_models_by_mode(self, mode: ModelMode) -> dict[str, ModelConfig]:
         """Get all models for a specific mode."""
-        return {
-            name: config for name, config in self.models.items() if config.mode == mode
-        }
+        return {name: config for name, config in self.models.items() if config.mode == mode}
 
     def get_chat_models(self) -> Mapping[str, ChatCompletionModel]:
         """Get all chat/completion models."""
@@ -104,9 +102,7 @@ class ModelRegistry(Schema):
                 mode = config_data["mode"]
                 match mode:
                     case "chat" | "completion":
-                        model_config: ModelConfig = ChatCompletionModel.model_validate(
-                            config_data
-                        )
+                        model_config: ModelConfig = ChatCompletionModel.model_validate(config_data)
                     case "embedding":
                         model_config = EmbeddingModel.model_validate(config_data)
                     case "audio_transcription":

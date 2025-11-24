@@ -118,9 +118,7 @@ class ModelPricing(Schema):
         if cache_write_tokens > 0:
             # Use cache creation pricing if available, otherwise standard input pricing
             cache_cost = (
-                self.cache_creation_input_token_cost
-                or self.input_cost_per_token
-                or Decimal(0)
+                self.cache_creation_input_token_cost or self.input_cost_per_token or Decimal(0)
             )
             total_cost += cache_cost * cache_write_tokens
 
@@ -259,9 +257,7 @@ class ChatModel(Schema):
     """Model capabilities and features."""
 
     @classmethod
-    def from_chat_completion_model(
-        cls, name: str, model: ChatCompletionModel
-    ) -> ChatModel:
+    def from_chat_completion_model(cls, name: str, model: ChatCompletionModel) -> ChatModel:
         """Convert from internal ChatCompletionModel to clean API model."""
         # Extract pricing info
         pricing = ModelPricing(
@@ -299,8 +295,7 @@ class ChatModel(Schema):
         # Extract capabilities
         capabilities = ModelCapabilities(
             supports_function_calling=model.supports_function_calling or False,
-            supports_parallel_function_calling=model.supports_parallel_function_calling
-            or False,
+            supports_parallel_function_calling=model.supports_parallel_function_calling or False,
             supports_tool_choice=model.supports_tool_choice or False,
             supports_response_schema=model.supports_response_schema or False,
             supports_system_messages=model.supports_system_messages or False,

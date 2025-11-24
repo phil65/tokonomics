@@ -18,9 +18,7 @@ class CohereProvider(ModelProvider):
 
     def __init__(self, api_key: str | None = None):
         super().__init__()
-        self.api_key = (
-            api_key or os.environ.get("COHERE_API_KEY") or os.environ.get("CO_API_KEY")
-        )
+        self.api_key = api_key or os.environ.get("COHERE_API_KEY") or os.environ.get("CO_API_KEY")
         if not self.api_key:
             msg = "Cohere API key not found in parameters or COHERE_API_KEY env var"
             raise RuntimeError(msg)

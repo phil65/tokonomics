@@ -229,9 +229,7 @@ async def get_available_models(
         )
         assert isinstance(data, dict), f"Expected dict, got {type(data)}"
         # Filter out non-dictionary entries (like sample_spec) and collect model names
-        model_names = sorted(
-            name.lower() for name, info in data.items() if isinstance(info, dict)
-        )
+        model_names = sorted(name.lower() for name, info in data.items() if isinstance(info, dict))
 
         logger.debug("Found %d available models", len(model_names))
 

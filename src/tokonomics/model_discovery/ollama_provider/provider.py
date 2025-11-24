@@ -123,13 +123,9 @@ class OllamaProvider(ModelProvider):
                             # Convert numeric values
                             try:
                                 if "." in param_value.strip('"'):
-                                    model_parameters[param_name] = float(
-                                        param_value.strip('"')
-                                    )
+                                    model_parameters[param_name] = float(param_value.strip('"'))
                                 elif param_value.strip('"').isdigit():
-                                    model_parameters[param_name] = int(
-                                        param_value.strip('"')
-                                    )
+                                    model_parameters[param_name] = int(param_value.strip('"'))
                                 else:
                                     model_parameters[param_name] = param_value.strip('"')
                             except ValueError:
@@ -137,9 +133,7 @@ class OllamaProvider(ModelProvider):
 
         # Fallback to estimation if no detailed context window found
         if not context_window:
-            context_window = self._estimate_context_window(
-                parameter_size, data.get("size", 0)
-            )
+            context_window = self._estimate_context_window(parameter_size, data.get("size", 0))
 
         # Build description from available details
         description_parts = []
@@ -160,9 +154,7 @@ class OllamaProvider(ModelProvider):
 
         if (family and "llava" in family.lower()) or (
             family
-            and any(
-                vision in family.lower() for vision in ["vision", "visual", "multimodal"]
-            )
+            and any(vision in family.lower() for vision in ["vision", "visual", "multimodal"])
         ):
             input_modalities.add("image")
 
@@ -193,9 +185,7 @@ class OllamaProvider(ModelProvider):
             if model_info := detail_data.get("model_info", {}):
                 arch_info = {}
                 for key, value in model_info.items():
-                    if any(
-                        key.startswith(prefix) for prefix in ["general.", f"{family}."]
-                    ):
+                    if any(key.startswith(prefix) for prefix in ["general.", f"{family}."]):
                         clean_key = key.split(".", 1)[1] if "." in key else key
                         arch_info[clean_key] = value
                 if arch_info:
@@ -215,9 +205,7 @@ class OllamaProvider(ModelProvider):
             metadata=metadata,
         )
 
-    def _estimate_context_window(
-        self, parameter_size: str, size_bytes: int
-    ) -> int | None:
+    def _estimate_context_window(self, parameter_size: str, size_bytes: int) -> int | None:
         """Estimate context window based on parameter size and model family."""
         if not parameter_size:
             return None
