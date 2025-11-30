@@ -1,3 +1,5 @@
+#:tombi schema.strict = false
+
 [project]
 name = "tokonomics"
 version = "1.2.6"
@@ -120,11 +122,12 @@ reportUnannotatedClassAttribute = false
 reportSelfClsParameterName = false
 reportPrivateImportUsage = false
 
-[tool.pytest.ini_options]
+[tool.pytest]
 log_cli = true
 log_date_format = "%Y-%m-%d %H:%M:%S"
 log_format = "%(asctime)s %(levelname)s %(message)s"
-testpaths = "tests/"
+minversion = "9.0"
+testpaths = ["tests/"]
 asyncio_mode = "auto"
 
 [tool.ruff]
@@ -221,6 +224,8 @@ ignore = [
   "D408",  # Section underline should be in the line following the section's name ("{name}")
   "D409",  # Section underline should match the length of its name ("{name}")
   "D413",  # Missing blank line after last section ("{name}")
+  "EM101",  # Exception must not use a string literal, assign to variable first
+  "EM102",  # Exception must not use an f-string literal, assign to variable first
   "ISC001",
   "PLC0415",
   "PLR0912",  # Too many branches
