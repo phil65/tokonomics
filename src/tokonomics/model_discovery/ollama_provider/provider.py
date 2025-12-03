@@ -26,10 +26,7 @@ class OllamaProvider(ModelProvider):
         """Check whether Ollama is running and available."""
         try:
             # Extract host and port from base_url
-            if "://" in self.base_url:
-                host_port = self.base_url.split("://")[1]
-            else:
-                host_port = self.base_url
+            host_port = self.base_url.split("://")[1] if "://" in self.base_url else self.base_url
 
             if ":" in host_port:
                 host, port_str = host_port.split(":", 1)
