@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import contextlib
+from datetime import datetime
 import os
 from typing import Any, cast
 
@@ -64,7 +66,10 @@ class OpenRouterProvider(ModelProvider):
 
         # Parse context length and created timestamp
         context_window = data.get("context_length")
-        created_timestamp = data.get("created")
+        created_at = None
+        if created_timestamp := data.get("created"):
+            with contextlib.suppress(ValueError, TypeError, OverflowError):
+                created_at = datetime.fromtimestamp(created_timestamp)
 
         # Extract additional fields
         hugging_face_id = data.get("hugging_face_id")
@@ -80,7 +85,6 @@ class OpenRouterProvider(ModelProvider):
         # Prepare metadata dictionary for OpenRouter-specific fields
         metadata = {
             "hugging_face_id": hugging_face_id,
-            "created_timestamp": created_timestamp,
             "is_moderated": is_moderated,
             "supported_parameters": supported_parameters,
         }
@@ -106,6 +110,7 @@ class OpenRouterProvider(ModelProvider):
             input_modalities=input_modalities,
             output_modalities=output_modalities,
             owned_by=hugging_face_id,  # Use hugging_face_id as the owner when available
+            created_at=created_at,
             metadata=metadata,
         )
 

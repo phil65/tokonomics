@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import contextlib
+from datetime import datetime
 import logging
 import os
 from typing import Any
@@ -35,7 +37,10 @@ class CerebrasProvider(ModelProvider):
         """Parse Cerebras API response into ModelInfo."""
         # Extract model ID and creation time
         model_id = data.get("id", "")
-        created_timestamp = data.get("created")
+        created_at = None
+        if created_timestamp := data.get("created"):
+            with contextlib.suppress(ValueError, TypeError, OverflowError):
+                created_at = datetime.fromtimestamp(created_timestamp)
 
         # Extract owner information
         owned_by = data.get("owned_by")
@@ -48,25 +53,13 @@ class CerebrasProvider(ModelProvider):
         elif model_id == "llama-3.3-70b":
             context_window = 32768  # Example value
 
-        # Create a description that includes creation timestamp if available
-        description = None
-        if created_timestamp:
-            from datetime import datetime
-
-            try:
-                created_date = datetime.fromtimestamp(created_timestamp)
-                formatted_date = created_date.strftime("%B %d, %Y")
-                description = f"Model released: {formatted_date}"
-            except (ValueError, TypeError, OverflowError) as e:
-                logger.warning("Could not parse timestamp %s: %s", created_timestamp, e)
-
         return ModelInfo(
             id=model_id,
             name=model_id,
             provider="cerebras",
-            description=description,
             owned_by=owned_by,
             context_window=context_window,
+            created_at=created_at,
         )
 
     async def get_models(self) -> list[ModelInfo]:

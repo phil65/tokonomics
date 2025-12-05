@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import contextlib
+from datetime import datetime
 import os
 from typing import TYPE_CHECKING, Any
 
@@ -85,14 +87,18 @@ class XAIProvider(ModelProvider):
                 else None,
             )
 
+        # Parse created timestamp
+        created_at = None
+        if created_timestamp := data.get("created"):
+            with contextlib.suppress(ValueError, TypeError, OverflowError):
+                created_at = datetime.fromtimestamp(created_timestamp)
+
         # Build metadata
         metadata = {}
         if "fingerprint" in data:
             metadata["fingerprint"] = data["fingerprint"]
         if "version" in data:
             metadata["version"] = data["version"]
-        if "created" in data:
-            metadata["created_timestamp"] = data["created"]
         if data.get("aliases"):
             metadata["aliases"] = data["aliases"]
 
@@ -104,6 +110,7 @@ class XAIProvider(ModelProvider):
             pricing=pricing,
             input_modalities=input_modalities,
             output_modalities=output_modalities,
+            created_at=created_at,
             metadata=metadata,
         )
 

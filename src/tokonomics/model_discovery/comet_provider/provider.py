@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from datetime import datetime
 import os
 from typing import Any
 
@@ -29,14 +30,22 @@ class CometProvider(ModelProvider):
 
     def _parse_model(self, data: dict[str, Any]) -> ModelInfo:
         """Parse Comet API response into ModelInfo."""
+        # Parse created timestamp
+        created_at = None
+        if created_timestamp := data.get("created"):
+            try:
+                created_at = datetime.fromtimestamp(created_timestamp)
+            except (ValueError, TypeError, OverflowError):
+                pass
+
         return ModelInfo(
             id=str(data["id"]),
             name=str(data.get("id")),  # Use id as name since no separate name field
             provider="comet",
             owned_by=str(data.get("owned_by")) if data.get("owned_by") else None,
             is_embedding="embedding" in str(data.get("id", "")).lower(),
+            created_at=created_at,
             metadata={
-                "created": data.get("created"),
                 "object": data.get("object"),
                 "root": data.get("root"),
                 "parent": data.get("parent"),

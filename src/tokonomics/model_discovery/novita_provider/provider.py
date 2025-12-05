@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import contextlib
+from datetime import datetime
 import os
 from typing import Any
 
@@ -39,10 +41,14 @@ class NovitaProvider(ModelProvider):
             else None,
         )
 
+        # Parse created timestamp
+        created_at = None
+        if created_timestamp := data.get("created"):
+            with contextlib.suppress(ValueError, TypeError, OverflowError):
+                created_at = datetime.fromtimestamp(created_timestamp)
+
         # Build metadata for additional fields
         metadata = {}
-        if "created" in data:
-            metadata["created_timestamp"] = data["created"]
         if "object" in data:
             metadata["object_type"] = data["object"]
 
@@ -53,6 +59,7 @@ class NovitaProvider(ModelProvider):
             description=str(data.get("description")) if data.get("description") else None,
             context_window=int(data["context_size"]) if data.get("context_size") else None,
             pricing=pricing,
+            created_at=created_at,
             metadata=metadata,
         )
 

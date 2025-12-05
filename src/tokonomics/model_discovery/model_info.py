@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+from datetime import datetime  # noqa: TC003
 from typing import Any, Literal
 
 
@@ -61,6 +62,8 @@ class ModelInfo:
     """Supported output modalities (text, image, audio, video, etc.)."""
     is_free: bool = False
     """Whether this model is free to use."""
+    created_at: datetime | None = None
+    """Timestamp when the model was created/released."""
     metadata: dict[str, Any] = field(default_factory=dict)
     """Provider-specific metadata that doesn't fit in standard fields."""
 
@@ -143,6 +146,9 @@ class ModelInfo:
         if self.is_deprecated:
             lines.append("\n⚠️ This model is deprecated")
 
+        if self.created_at:
+            lines.append(f"Created: {self.created_at.strftime('%Y-%m-%d')}")
+
         # Add any relevant metadata
         if self.metadata and any(self.metadata.values()):
             lines.append("\nAdditional Information:")
@@ -155,11 +161,6 @@ class ModelInfo:
                     lines.append(f"- Tokenizer: {value}")
                 elif key == "is_moderated" and value:
                     lines.append(f"- Moderated: {value}")
-                elif key == "created_timestamp" and value:
-                    from datetime import datetime
-
-                    timestamp = datetime.fromtimestamp(value).strftime("%Y-%m-%d")
-                    lines.append(f"- Created: {timestamp}")
                 elif isinstance(value, list | set) and value:
                     vals = ", ".join(str(v) for v in value)
                     lines.append(f"- {key.replace('_', ' ').title()}: {vals}")

@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import contextlib
+from datetime import datetime
 import os
 from typing import TYPE_CHECKING, Any
 
@@ -53,8 +55,12 @@ class RequestyProvider(ModelProvider):
             metadata["supports_computer_use"] = data["supports_computer_use"]
         if "supports_reasoning" in data:
             metadata["supports_reasoning"] = data["supports_reasoning"]
-        if "created" in data:
-            metadata["created_timestamp"] = data["created"]
+
+        # Parse created timestamp
+        created_at = None
+        if created_timestamp := data.get("created"):
+            with contextlib.suppress(ValueError, TypeError, OverflowError):
+                created_at = datetime.fromtimestamp(created_timestamp)
 
         return ModelInfo(
             id=str(data["id"]),
@@ -68,6 +74,7 @@ class RequestyProvider(ModelProvider):
             if data.get("max_output_tokens")
             else None,
             input_modalities=input_modalities,
+            created_at=created_at,
             metadata=metadata,
         )
 

@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import contextlib
+from datetime import datetime
 import logging
 import os
 from typing import TYPE_CHECKING, Any, Literal
@@ -140,6 +142,12 @@ class ModelsDevProvider(ModelProvider):
             input_modalities = set(modalities.get("input", ["text"]))
             output_modalities = set(modalities.get("output", ["text"]))
 
+        # Parse release_date (format: "YYYY-MM-DD")
+        created_at = None
+        if release_date := data.get("release_date"):
+            with contextlib.suppress(ValueError, TypeError):
+                created_at = datetime.strptime(release_date, "%Y-%m-%d")
+
         model_id = str(data["id"])
 
         # Determine if it's an embedding model (heuristic)
@@ -157,13 +165,13 @@ class ModelsDevProvider(ModelProvider):
             input_modalities=input_modalities,
             output_modalities=output_modalities,
             is_free=pricing is not None and pricing.prompt == 0 and pricing.completion == 0,
+            created_at=created_at,
             metadata={
                 "attachment": data.get("attachment", False),
                 "reasoning": data.get("reasoning", False),
                 "temperature": data.get("temperature", True),
                 "tool_call": data.get("tool_call", False),
                 "knowledge": data.get("knowledge"),
-                "release_date": data.get("release_date"),
                 "last_updated": data.get("last_updated"),
                 "open_weights": data.get("open_weights", False),
             },

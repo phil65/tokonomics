@@ -151,6 +151,4 @@ if __name__ == "__main__":
 
     provider = VercelGatewayProvider()
     models = asyncio.run(provider.get_models())
-    for model in models:
-        print(model.format())
-        print("-" * 80)
+    print(models)
