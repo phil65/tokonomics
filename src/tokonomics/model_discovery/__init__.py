@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import asyncio
 import logging
+from datetime import datetime
 from functools import partial
 from typing import Literal, TYPE_CHECKING
 
@@ -40,6 +41,7 @@ ZAIProvider = partial(ModelsDevProvider, provider="zai")
 
 
 if TYPE_CHECKING:
+    from datetime import timedelta
     from collections.abc import Callable
     from collections.abc import Sequence
 
@@ -106,6 +108,7 @@ def get_all_models_sync(
     providers: Sequence[ProviderType] | None = None,
     max_workers: int | None = None,
     include_deprecated: bool = False,
+    max_age: timedelta | None = None,
 ) -> list[ModelInfo]:
     """Fetch models from selected providers in parallel using threads.
 
@@ -114,6 +117,8 @@ def get_all_models_sync(
         max_workers: Maximum number of worker threads.
                      Defaults to min(32, os.cpu_count() * 5)
         include_deprecated: Whether to include deprecated models. Defaults to False.
+        max_age: Only include models created within this duration.
+                 Models without created_at are always included.
 
     Returns:
         list[ModelInfo]: Combined list of models from all providers.
@@ -145,6 +150,9 @@ def get_all_models_sync(
             if not include_deprecated:
                 models = [model for model in models if not model.is_deprecated]
             models = [model for model in models if not model.is_embedding]
+            if max_age is not None:
+                cutoff = datetime.now() - max_age
+                models = [m for m in models if m.created_at is None or m.created_at >= cutoff]
         except Exception as e:  # noqa: BLE001
             logger.warning("Failed to fetch models from %s: %s", provider_name, str(e))
             return None
@@ -173,12 +181,15 @@ async def get_all_models(
     *,
     providers: Sequence[ProviderType] | None = None,
     include_deprecated: bool = False,
+    max_age: timedelta | None = None,
 ) -> list[ModelInfo]:
     """Fetch models from selected providers in parallel.
 
     Args:
         providers: Sequence of provider names to use. Defaults to available providers.
         include_deprecated: Whether to include deprecated models. Defaults to False.
+        max_age: Only include models created within this duration.
+                 Models without created_at are always included.
 
     Returns:
         list[ModelInfo]: Combined list of models from all providers.
@@ -208,6 +219,9 @@ async def get_all_models(
             if not include_deprecated:
                 models = [model for model in models if not model.is_deprecated]
             models = [model for model in models if not model.is_embedding]
+            if max_age is not None:
+                cutoff = datetime.now() - max_age
+                models = [m for m in models if m.created_at is None or m.created_at >= cutoff]
         except Exception as e:  # noqa: BLE001
             logger.warning("Failed to fetch models from %s: %s", provider_name, str(e))
             return None
