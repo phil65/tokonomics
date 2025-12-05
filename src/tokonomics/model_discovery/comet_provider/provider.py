@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import contextlib
 from datetime import datetime
 import os
 from typing import Any
@@ -33,10 +34,8 @@ class CometProvider(ModelProvider):
         # Parse created timestamp
         created_at = None
         if created_timestamp := data.get("created"):
-            try:
+            with contextlib.suppress(ValueError, TypeError, OverflowError):
                 created_at = datetime.fromtimestamp(created_timestamp)
-            except (ValueError, TypeError, OverflowError):
-                pass
 
         return ModelInfo(
             id=str(data["id"]),
