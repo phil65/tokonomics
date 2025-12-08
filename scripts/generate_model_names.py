@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from collections import defaultdict
+from datetime import timedelta
 import logging
 from pathlib import Path
 
@@ -118,7 +119,7 @@ def main() -> None:
     logger.info("Fetching models from all available providers...")
 
     # Fetch models with limited concurrency to avoid overwhelming APIs
-    models = get_all_models_sync(max_workers=3)
+    models = get_all_models_sync(max_workers=3, max_age=timedelta(days=200))
     models = [m for m in models if m.provider != "ollama"]
     if not models:
         logger.error("No models found")
