@@ -262,6 +262,9 @@ lines-after-imports = 2
 force-sort-within-sections = true
 combine-as-imports = true
 
+[tool.ruff.lint.mccabe]
+max-complexity = 15
+
 [tool.ruff.lint.per-file-ignores]
 "__init__.py" = ["E402", "I001"]
 "scripts/*" = ["INP001"]
@@ -276,3 +279,21 @@ python-platform = "all"
 
 [tool.uv]
 default-groups = ["dev", "lint", "docs"]
+
+[tool.uv.build-backend]
+wheel-exclude = [
+  ".mypy_cache/**",
+  "__pycache__/**",
+  "*.pyc",
+  "*.pyo",
+  ".pytest_cache/**",
+  ".ruff_cache/**",
+]
+source-exclude = [
+  ".mypy_cache/**",
+  "__pycache__/**",
+  "*.pyc",
+  "*.pyo",
+  ".pytest_cache/**",
+  ".ruff_cache/**",
+]
