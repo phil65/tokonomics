@@ -108,7 +108,7 @@ _PROVIDER_MAP: dict[ProviderType, Callable[[], ModelProvider]] = {
 
 def get_all_models_sync(
     *,
-    providers: Sequence[ProviderType] | None = None,
+    providers: Sequence[ProviderType | Literal["models.dev"]] | None = None,
     max_workers: int | None = None,
     include_deprecated: bool = False,
     max_age: timedelta | None = None,
@@ -117,6 +117,7 @@ def get_all_models_sync(
 
     Args:
         providers: Sequence of provider names to use. Defaults to available providers.
+                   Use "models.dev" to fetch all models from the models.dev aggregator.
         max_workers: Maximum number of worker threads.
                      Defaults to min(32, os.cpu_count() * 5)
         include_deprecated: Whether to include deprecated models. Defaults to False.
@@ -129,7 +130,7 @@ def get_all_models_sync(
     import concurrent.futures
 
     if providers is not None:
-        selected_providers = providers
+        selected_providers: list[ProviderType | Literal["models.dev"]] = list(providers)
     else:
         # Only use available providers when no specific providers are requested
         selected_providers = []
@@ -143,12 +144,18 @@ def get_all_models_sync(
                 continue
     all_models: list[ModelInfo] = []
 
-    def fetch_provider_models(provider_name: ProviderType) -> list[ModelInfo] | None:
+    def fetch_provider_models(
+        provider_name: ProviderType | Literal["models.dev"],
+    ) -> list[ModelInfo] | None:
         """Fetch models from a single provider."""
         import anyenv
 
         try:
-            provider = _PROVIDER_MAP[provider_name]()
+            provider = (
+                ModelsDevProvider()
+                if provider_name == "models.dev"
+                else _PROVIDER_MAP[provider_name]()
+            )
             models = anyenv.run_sync(provider.get_models())
             if not include_deprecated:
                 models = [model for model in models if not model.is_deprecated]
@@ -182,7 +189,7 @@ def get_all_models_sync(
 
 async def get_all_models(
     *,
-    providers: Sequence[ProviderType] | None = None,
+    providers: Sequence[ProviderType | Literal["models.dev"]] | None = None,
     include_deprecated: bool = False,
     max_age: timedelta | None = None,
 ) -> list[ModelInfo]:
@@ -190,6 +197,7 @@ async def get_all_models(
 
     Args:
         providers: Sequence of provider names to use. Defaults to available providers.
+                   Use "models.dev" to fetch all models from the models.dev aggregator.
         include_deprecated: Whether to include deprecated models. Defaults to False.
         max_age: Only include models created within this duration.
                  Models without created_at are always included.
@@ -198,7 +206,7 @@ async def get_all_models(
         list[ModelInfo]: Combined list of models from all providers.
     """
     if providers is not None:
-        selected_providers = providers
+        selected_providers: list[ProviderType | Literal["models.dev"]] = list(providers)
     else:
         # Only use available providers when no specific providers are requested
         selected_providers = []
@@ -213,11 +221,15 @@ async def get_all_models(
     all_models: list[ModelInfo] = []
 
     async def fetch_provider_models(
-        provider_name: ProviderType,
+        provider_name: ProviderType | Literal["models.dev"],
     ) -> list[ModelInfo] | None:
         """Fetch models from a single provider."""
         try:
-            provider = _PROVIDER_MAP[provider_name]()
+            provider = (
+                ModelsDevProvider()
+                if provider_name == "models.dev"
+                else _PROVIDER_MAP[provider_name]()
+            )
             models = await provider.get_models()
             if not include_deprecated:
                 models = [model for model in models if not model.is_deprecated]
