@@ -55,6 +55,10 @@ class MistralProvider(ModelProvider):
         input_modalities: set[Modality] = {"text"}
         if capabilities.get("vision"):
             input_modalities.add("image")
+        if capabilities.get("ocr"):
+            input_modalities.add("file")
+        if capabilities.get("audio"):
+            input_modalities.add("audio")
 
         return ModelInfo(
             id=str(data["id"]),

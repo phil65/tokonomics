@@ -134,13 +134,16 @@ class ModelsDevProvider(ModelProvider):
                 else None,
             )
 
-        # Extract modalities
+        # Extract modalities (map 'pdf' -> 'file' for consistency)
         input_modalities: set[Modality] = {"text"}
         output_modalities: set[Modality] = {"text"}
         if "modalities" in data:
             modalities = data["modalities"]
-            input_modalities = set(modalities.get("input", ["text"]))
-            output_modalities = set(modalities.get("output", ["text"]))
+            raw_input = modalities.get("input", ["text"])
+            raw_output = modalities.get("output", ["text"])
+            # Map 'pdf' to 'file' for consistency with other providers
+            input_modalities = {"file" if m == "pdf" else m for m in raw_input}
+            output_modalities = {"file" if m == "pdf" else m for m in raw_output}
 
         # Parse release_date (format: "YYYY-MM-DD")
         created_at = None

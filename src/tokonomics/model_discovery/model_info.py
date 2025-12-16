@@ -7,7 +7,7 @@ from datetime import datetime  # noqa: TC003
 from typing import Any, Literal
 
 
-Modality = Literal["text", "image", "audio", "video"]
+Modality = Literal["text", "image", "audio", "video", "file"]
 
 
 @dataclass
