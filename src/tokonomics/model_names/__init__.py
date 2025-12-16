@@ -9,6 +9,7 @@ from __future__ import annotations
 
 from .anthropic import AnthropicModels
 from .cerebras import CerebrasModels
+from .claude_code import Claude_CodeModels
 from .cohere import CohereModels
 from .comet import CometModels
 from .copilot import CopilotModels
@@ -29,6 +30,7 @@ from .zai import ZaiModels
 ModelName = (
     AnthropicModels
     | CerebrasModels
+    | Claude_CodeModels
     | CohereModels
     | CometModels
     | CopilotModels
@@ -49,6 +51,7 @@ ModelName = (
 __all__ = [
     "AnthropicModels",
     "CerebrasModels",
+    "Claude_CodeModels",
     "CohereModels",
     "CometModels",
     "CopilotModels",
