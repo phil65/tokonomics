@@ -119,18 +119,14 @@ def generate_init_file(
 
     # Format ModelId union
     if model_id_types:
-        formatted_id_types = [model_id_types[0]]
-        for type_name in model_id_types[1:]:
-            formatted_id_types.append(f"| {type_name}")
+        formatted_id_types = [model_id_types[0], *[f"| {t}" for t in model_id_types[1:]]]
         model_id_union = "\n    ".join(formatted_id_types)
     else:
         model_id_union = ""
 
     # Format ModelName union
     if model_name_types:
-        formatted_name_types = [model_name_types[0]]
-        for type_name in model_name_types[1:]:
-            formatted_name_types.append(f"| {type_name}")
+        formatted_name_types = [model_name_types[0], *[f"| {t}" for t in model_name_types[1:]]]
         model_name_union = "\n    ".join(formatted_name_types)
     else:
         model_name_union = ""
@@ -147,7 +143,8 @@ def generate_init_file(
 
     # Build the imports section with models.dev separate
     if modelsdev_import:
-        full_imports = f"{imports_str}\n\n# models.dev aggregator (not included in ModelId/ModelName unions)\n{modelsdev_import}"
+        modelsdev_comment = "# models.dev aggregator (not included in ModelId/ModelName unions)"
+        full_imports = f"{imports_str}\n\n{modelsdev_comment}\n{modelsdev_import}"
     else:
         full_imports = imports_str
 
