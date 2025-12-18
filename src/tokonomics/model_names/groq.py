@@ -9,7 +9,8 @@ from __future__ import annotations
 from typing import Literal
 
 
-GroqModels = Literal[
+# Fully-qualified model IDs (provider:model format)
+GroqModelId = Literal[
     "groq:allam-2-7b",
     "groq:groq/compound",
     "groq:groq/compound-mini",
@@ -32,4 +33,28 @@ GroqModels = Literal[
     "groq:whisper-large-v3-turbo",
 ]
 
-__all__ = ["GroqModels"]
+# Model names without provider prefix
+GroqModelName = Literal[
+    "allam-2-7b",
+    "groq/compound",
+    "groq/compound-mini",
+    "llama-3.1-8b-instant",
+    "llama-3.3-70b-versatile",
+    "meta-llama/llama-4-maverick-17b-128e-instruct",
+    "meta-llama/llama-4-scout-17b-16e-instruct",
+    "meta-llama/llama-guard-4-12b",
+    "meta-llama/llama-prompt-guard-2-22m",
+    "meta-llama/llama-prompt-guard-2-86m",
+    "moonshotai/kimi-k2-instruct",
+    "moonshotai/kimi-k2-instruct-0905",
+    "openai/gpt-oss-120b",
+    "openai/gpt-oss-20b",
+    "openai/gpt-oss-safeguard-20b",
+    "playai-tts",
+    "playai-tts-arabic",
+    "qwen/qwen3-32b",
+    "whisper-large-v3",
+    "whisper-large-v3-turbo",
+]
+
+__all__ = ["GroqModelId", "GroqModelName"]

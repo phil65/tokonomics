@@ -7,65 +7,108 @@ Total providers: 17
 from __future__ import annotations
 
 
-from .anthropic import AnthropicModels
-from .cerebras import CerebrasModels
-from .claude_code import Claude_CodeModels
-from .cohere import CohereModels
-from .comet import CometModels
-from .copilot import CopilotModels
-from .deepseek import DeepseekModels
-from .gemini import GeminiModels
-from .github import GithubModels
-from .groq import GroqModels
-from .mistral import MistralModels
-from .moonshotai import MoonshotaiModels
-from .openai import OpenaiModels
-from .openrouter import OpenrouterModels
-from .requesty import RequestyModels
-from .vercel_gateway import Vercel_GatewayModels
-from .xai import XaiModels
-from .zai import ZaiModels
+from .anthropic import AnthropicModelId, AnthropicModelName
+from .cerebras import CerebrasModelId, CerebrasModelName
+from .claude_code import ClaudeCodeModelId, ClaudeCodeModelName
+from .cohere import CohereModelId, CohereModelName
+from .copilot import CopilotModelId, CopilotModelName
+from .deepseek import DeepseekModelId, DeepseekModelName
+from .gemini import GeminiModelId, GeminiModelName
+from .github import GithubModelId, GithubModelName
+from .groq import GroqModelId, GroqModelName
+from .mistral import MistralModelId, MistralModelName
+from .moonshotai import MoonshotaiModelId, MoonshotaiModelName
+from .openai import OpenaiModelId, OpenaiModelName
+from .openrouter import OpenrouterModelId, OpenrouterModelName
+from .requesty import RequestyModelId, RequestyModelName
+from .vercel_gateway import VercelGatewayModelId, VercelGatewayModelName
+from .xai import XaiModelId, XaiModelName
+from .zai import ZaiModelId, ZaiModelName
 
-# Union of all provider model types
+# models.dev aggregator (not included in ModelId/ModelName unions)
+from .modelsdev import ModelsDevModelId, ModelsDevModelName
+
+# Union of all provider model IDs (fully-qualified provider:model format)
+# Total: 666, Unique: 666
+ModelId = (
+    AnthropicModelId
+    | CerebrasModelId
+    | ClaudeCodeModelId
+    | CohereModelId
+    | CopilotModelId
+    | DeepseekModelId
+    | GeminiModelId
+    | GithubModelId
+    | GroqModelId
+    | MistralModelId
+    | MoonshotaiModelId
+    | OpenaiModelId
+    | OpenrouterModelId
+    | RequestyModelId
+    | VercelGatewayModelId
+    | XaiModelId
+    | ZaiModelId
+)
+
+# Union of all provider model names (without provider prefix)
+# Total: 666, Unique: 582 (duplicates exist across providers)
 ModelName = (
-    AnthropicModels
-    | CerebrasModels
-    | Claude_CodeModels
-    | CohereModels
-    | CometModels
-    | CopilotModels
-    | DeepseekModels
-    | GeminiModels
-    | GithubModels
-    | GroqModels
-    | MistralModels
-    | MoonshotaiModels
-    | OpenaiModels
-    | OpenrouterModels
-    | RequestyModels
-    | Vercel_GatewayModels
-    | XaiModels
-    | ZaiModels
+    AnthropicModelName
+    | CerebrasModelName
+    | ClaudeCodeModelName
+    | CohereModelName
+    | CopilotModelName
+    | DeepseekModelName
+    | GeminiModelName
+    | GithubModelName
+    | GroqModelName
+    | MistralModelName
+    | MoonshotaiModelName
+    | OpenaiModelName
+    | OpenrouterModelName
+    | RequestyModelName
+    | VercelGatewayModelName
+    | XaiModelName
+    | ZaiModelName
 )
 
 __all__ = [
-    "AnthropicModels",
-    "CerebrasModels",
-    "Claude_CodeModels",
-    "CohereModels",
-    "CometModels",
-    "CopilotModels",
-    "DeepseekModels",
-    "GeminiModels",
-    "GithubModels",
-    "GroqModels",
-    "MistralModels",
+    "AnthropicModelId",
+    "AnthropicModelName",
+    "CerebrasModelId",
+    "CerebrasModelName",
+    "ClaudeCodeModelId",
+    "ClaudeCodeModelName",
+    "CohereModelId",
+    "CohereModelName",
+    "CopilotModelId",
+    "CopilotModelName",
+    "DeepseekModelId",
+    "DeepseekModelName",
+    "GeminiModelId",
+    "GeminiModelName",
+    "GithubModelId",
+    "GithubModelName",
+    "GroqModelId",
+    "GroqModelName",
+    "MistralModelId",
+    "MistralModelName",
+    "ModelId",
     "ModelName",
-    "MoonshotaiModels",
-    "OpenaiModels",
-    "OpenrouterModels",
-    "RequestyModels",
-    "Vercel_GatewayModels",
-    "XaiModels",
-    "ZaiModels",
+    "ModelsDevModelId",
+    "ModelsDevModelName",
+    "MoonshotaiModelId",
+    "MoonshotaiModelName",
+    "OpenaiModelId",
+    "OpenaiModelName",
+    "OpenrouterModelId",
+    "OpenrouterModelName",
+    "RequestyModelId",
+    "RequestyModelName",
+    "VercelGatewayModelId",
+    "VercelGatewayModelName",
+    "XaiModelId",
+    "XaiModelName",
+    "ZaiModelId",
+    "ZaiModelName",
 ]

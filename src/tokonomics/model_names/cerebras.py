@@ -9,10 +9,18 @@ from __future__ import annotations
 from typing import Literal
 
 
-CerebrasModels = Literal[
+# Fully-qualified model IDs (provider:model format)
+CerebrasModelId = Literal[
     "cerebras:gpt-oss-120b",
     "cerebras:qwen-3-235b-a22b-instruct-2507",
     "cerebras:zai-glm-4.6",
 ]
 
-__all__ = ["CerebrasModels"]
+# Model names without provider prefix
+CerebrasModelName = Literal[
+    "gpt-oss-120b",
+    "qwen-3-235b-a22b-instruct-2507",
+    "zai-glm-4.6",
+]
+
+__all__ = ["CerebrasModelId", "CerebrasModelName"]

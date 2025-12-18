@@ -9,7 +9,8 @@ from __future__ import annotations
 from typing import Literal
 
 
-MoonshotaiModels = Literal[
+# Fully-qualified model IDs (provider:model format)
+MoonshotaiModelId = Literal[
     "moonshotai:kimi-k2-0711-preview",
     "moonshotai:kimi-k2-0905-preview",
     "moonshotai:kimi-k2-thinking",
@@ -17,4 +18,13 @@ MoonshotaiModels = Literal[
     "moonshotai:kimi-k2-turbo-preview",
 ]
 
-__all__ = ["MoonshotaiModels"]
+# Model names without provider prefix
+MoonshotaiModelName = Literal[
+    "kimi-k2-0711-preview",
+    "kimi-k2-0905-preview",
+    "kimi-k2-thinking",
+    "kimi-k2-thinking-turbo",
+    "kimi-k2-turbo-preview",
+]
+
+__all__ = ["MoonshotaiModelId", "MoonshotaiModelName"]

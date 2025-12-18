@@ -9,7 +9,8 @@ from __future__ import annotations
 from typing import Literal
 
 
-XaiModels = Literal[
+# Fully-qualified model IDs (provider:model format)
+XaiModelId = Literal[
     "xai:grok-4-0709",
     "xai:grok-4-1-fast-non-reasoning",
     "xai:grok-4-1-fast-reasoning",
@@ -18,4 +19,14 @@ XaiModels = Literal[
     "xai:grok-code-fast-1",
 ]
 
-__all__ = ["XaiModels"]
+# Model names without provider prefix
+XaiModelName = Literal[
+    "grok-4-0709",
+    "grok-4-1-fast-non-reasoning",
+    "grok-4-1-fast-reasoning",
+    "grok-4-fast-non-reasoning",
+    "grok-4-fast-reasoning",
+    "grok-code-fast-1",
+]
+
+__all__ = ["XaiModelId", "XaiModelName"]

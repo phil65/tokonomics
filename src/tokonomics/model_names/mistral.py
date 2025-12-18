@@ -9,7 +9,8 @@ from __future__ import annotations
 from typing import Literal
 
 
-MistralModels = Literal[
+# Fully-qualified model IDs (provider:model format)
+MistralModelId = Literal[
     "mistral:codestral-2508",
     "mistral:codestral-latest",
     "mistral:devstral-2512",
@@ -57,4 +58,53 @@ MistralModels = Literal[
     "mistral:voxtral-small-latest",
 ]
 
-__all__ = ["MistralModels"]
+# Model names without provider prefix
+MistralModelName = Literal[
+    "codestral-2508",
+    "codestral-latest",
+    "devstral-2512",
+    "devstral-latest",
+    "devstral-medium-2507",
+    "devstral-medium-latest",
+    "devstral-small-2507",
+    "devstral-small-latest",
+    "labs-devstral-small-2512",
+    "labs-mistral-small-creative",
+    "magistral-medium-2509",
+    "magistral-medium-latest",
+    "magistral-small-2509",
+    "magistral-small-latest",
+    "ministral-14b-2512",
+    "ministral-14b-latest",
+    "ministral-3b-2512",
+    "ministral-3b-latest",
+    "ministral-8b-2512",
+    "ministral-8b-latest",
+    "mistral-large-2411",
+    "mistral-large-2512",
+    "mistral-large-latest",
+    "mistral-large-pixtral-2411",
+    "mistral-medium",
+    "mistral-medium-2505",
+    "mistral-medium-2508",
+    "mistral-medium-latest",
+    "mistral-ocr-2505",
+    "mistral-ocr-2512",
+    "mistral-ocr-latest",
+    "mistral-small-2506",
+    "mistral-small-latest",
+    "mistral-tiny-2407",
+    "mistral-tiny-latest",
+    "mistral-vibe-cli-latest",
+    "open-mistral-nemo",
+    "open-mistral-nemo-2407",
+    "pixtral-large-2411",
+    "pixtral-large-latest",
+    "voxtral-mini-2507",
+    "voxtral-mini-latest",
+    "voxtral-mini-transcribe-2507",
+    "voxtral-small-2507",
+    "voxtral-small-latest",
+]
+
+__all__ = ["MistralModelId", "MistralModelName"]

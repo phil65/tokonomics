@@ -9,10 +9,18 @@ from __future__ import annotations
 from typing import Literal
 
 
-CohereModels = Literal[
+# Fully-qualified model IDs (provider:model format)
+CohereModelId = Literal[
     "cohere:command-a-reasoning-08-2025",
     "cohere:command-a-translate-08-2025",
     "cohere:command-a-vision-07-2025",
 ]
 
-__all__ = ["CohereModels"]
+# Model names without provider prefix
+CohereModelName = Literal[
+    "command-a-reasoning-08-2025",
+    "command-a-translate-08-2025",
+    "command-a-vision-07-2025",
+]
+
+__all__ = ["CohereModelId", "CohereModelName"]

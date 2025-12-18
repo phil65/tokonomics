@@ -9,9 +9,16 @@ from __future__ import annotations
 from typing import Literal
 
 
-DeepseekModels = Literal[
+# Fully-qualified model IDs (provider:model format)
+DeepseekModelId = Literal[
     "deepseek:deepseek-chat",
     "deepseek:deepseek-reasoner",
 ]
 
-__all__ = ["DeepseekModels"]
+# Model names without provider prefix
+DeepseekModelName = Literal[
+    "deepseek-chat",
+    "deepseek-reasoner",
+]
+
+__all__ = ["DeepseekModelId", "DeepseekModelName"]

@@ -9,7 +9,8 @@ from __future__ import annotations
 from typing import Literal
 
 
-AnthropicModels = Literal[
+# Fully-qualified model IDs (provider:model format)
+AnthropicModelId = Literal[
     "anthropic:claude-haiku-4-5",
     "anthropic:claude-haiku-4-5-20251001",
     "anthropic:claude-opus-4-1",
@@ -20,4 +21,16 @@ AnthropicModels = Literal[
     "anthropic:claude-sonnet-4-5-20250929",
 ]
 
-__all__ = ["AnthropicModels"]
+# Model names without provider prefix
+AnthropicModelName = Literal[
+    "claude-haiku-4-5",
+    "claude-haiku-4-5-20251001",
+    "claude-opus-4-1",
+    "claude-opus-4-1-20250805",
+    "claude-opus-4-5",
+    "claude-opus-4-5-20251101",
+    "claude-sonnet-4-5",
+    "claude-sonnet-4-5-20250929",
+]
+
+__all__ = ["AnthropicModelId", "AnthropicModelName"]

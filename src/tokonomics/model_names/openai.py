@@ -9,7 +9,8 @@ from __future__ import annotations
 from typing import Literal
 
 
-OpenaiModels = Literal[
+# Fully-qualified model IDs (provider:model format)
+OpenaiModelId = Literal[
     "openai:gpt-5",
     "openai:gpt-5-chat-latest",
     "openai:gpt-5-codex",
@@ -27,4 +28,23 @@ OpenaiModels = Literal[
     "openai:o3-pro",
 ]
 
-__all__ = ["OpenaiModels"]
+# Model names without provider prefix
+OpenaiModelName = Literal[
+    "gpt-5",
+    "gpt-5-chat-latest",
+    "gpt-5-codex",
+    "gpt-5-mini",
+    "gpt-5-nano",
+    "gpt-5-pro",
+    "gpt-5.1",
+    "gpt-5.1-chat-latest",
+    "gpt-5.1-codex",
+    "gpt-5.1-codex-max",
+    "gpt-5.1-codex-mini",
+    "gpt-5.2",
+    "gpt-5.2-chat-latest",
+    "gpt-5.2-pro",
+    "o3-pro",
+]
+
+__all__ = ["OpenaiModelId", "OpenaiModelName"]

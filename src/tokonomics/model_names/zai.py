@@ -9,7 +9,8 @@ from __future__ import annotations
 from typing import Literal
 
 
-ZaiModels = Literal[
+# Fully-qualified model IDs (provider:model format)
+ZaiModelId = Literal[
     "zai:glm-4.5",
     "zai:glm-4.5-air",
     "zai:glm-4.5-flash",
@@ -18,4 +19,14 @@ ZaiModels = Literal[
     "zai:glm-4.6v",
 ]
 
-__all__ = ["ZaiModels"]
+# Model names without provider prefix
+ZaiModelName = Literal[
+    "glm-4.5",
+    "glm-4.5-air",
+    "glm-4.5-flash",
+    "glm-4.5v",
+    "glm-4.6",
+    "glm-4.6v",
+]
+
+__all__ = ["ZaiModelId", "ZaiModelName"]

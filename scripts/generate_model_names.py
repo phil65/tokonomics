@@ -14,22 +14,39 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 
-def generate_provider_file(provider: str, model_ids: list[str], output_dir: Path) -> str:
+def _make_identifier(provider: str) -> str:
+    """Convert provider name to valid Python identifier prefix."""
+    # Special case for models.dev -> ModelsDev
+    if provider == "modelsdev":
+        return "ModelsDev"
+    return provider.replace("-", "_").replace(".", "_").title().replace("_", "")
+
+
+def generate_provider_file(
+    provider: str,
+    model_ids: list[str],
+    model_names: list[str],
+    output_dir: Path,
+) -> tuple[str, str]:
     """Generate a Python file for a specific provider.
 
     Args:
         provider: Provider name
-        model_ids: List of model IDs for this provider
+        model_ids: List of fully-qualified model IDs (provider:model)
+        model_names: List of model names without provider prefix
         output_dir: Output directory path
 
     Returns:
-        The type name for this provider
+        Tuple of (model_id_type_name, model_name_type_name)
     """
     # Create valid Python identifier from provider name
-    type_name = f"{provider.replace('-', '_').replace('.', '_').title()}Models"
+    prefix = _make_identifier(provider)
+    model_id_type = f"{prefix}ModelId"
+    model_name_type = f"{prefix}ModelName"
     filename = f"{provider.replace('-', '_').replace('.', '_').lower()}.py"
 
     formatted_ids = ",\n    ".join(f'"{mid}"' for mid in model_ids)
+    formatted_names = ",\n    ".join(f'"{name}"' for name in model_names)
 
     content = f'''"""Generated model names for {provider} provider.
 
@@ -42,11 +59,17 @@ from __future__ import annotations
 from typing import Literal
 
 
-{type_name} = Literal[
+# Fully-qualified model IDs (provider:model format)
+{model_id_type} = Literal[
     {formatted_ids},
 ]
 
-__all__ = ["{type_name}"]
+# Model names without provider prefix
+{model_name_type} = Literal[
+    {formatted_names},
+]
+
+__all__ = ["{model_id_type}", "{model_name_type}"]
 '''
 
     file_path = output_dir / filename
@@ -54,37 +77,85 @@ __all__ = ["{type_name}"]
         f.write(content)
 
     logger.info("Generated %s with %d models", file_path, len(model_ids))
-    return type_name
+    return model_id_type, model_name_type
 
 
-def generate_init_file(provider_types: dict[str, str], output_dir: Path) -> None:
+def generate_init_file(
+    provider_types: dict[str, tuple[str, str]],
+    modelsdev_types: tuple[str, str] | None,
+    all_model_ids: list[str],
+    all_model_names: list[str],
+    output_dir: Path,
+) -> None:
     """Generate __init__.py with union of all provider types.
 
     Args:
-        provider_types: Mapping of provider name to type name
+        provider_types: Mapping of provider name to (model_id_type, model_name_type)
+        modelsdev_types: Tuple of (model_id_type, model_name_type) for models.dev, or None
+        all_model_ids: All model IDs across providers (for counting)
+        all_model_names: All model names across providers (for counting)
         output_dir: Output directory path
     """
     imports = []
-    type_names = []
+    model_id_types = []
+    model_name_types = []
 
     # Sort providers to ensure consistent import order
-    for provider, type_name in sorted(provider_types.items()):
+    for provider, (model_id_type, model_name_type) in sorted(provider_types.items()):
         module_name = provider.replace("-", "_").replace(".", "_").lower()
-        imports.append(f"from .{module_name} import {type_name}")
-        type_names.append(type_name)
+        imports.append(f"from .{module_name} import {model_id_type}, {model_name_type}")
+        model_id_types.append(model_id_type)
+        model_name_types.append(model_name_type)
+
+    # Add models.dev import separately (not included in unions)
+    modelsdev_import = ""
+    modelsdev_exports = []
+    if modelsdev_types:
+        modelsdev_id_type, modelsdev_name_type = modelsdev_types
+        modelsdev_import = f"from .modelsdev import {modelsdev_id_type}, {modelsdev_name_type}"
+        modelsdev_exports = [f'"{modelsdev_id_type}"', f'"{modelsdev_name_type}"']
 
     imports_str = "\n".join(imports)
-    # Fix formatting to put pipe at beginning of line (except first)
-    if type_names:
-        formatted_types = [type_names[0]]  # First type without pipe
-        for type_name in type_names[1:]:
-            formatted_types.append(f"| {type_name}")  # noqa: PERF401
-        union_types = "\n    ".join(formatted_types)
+
+    # Format ModelId union
+    if model_id_types:
+        formatted_id_types = [model_id_types[0]]
+        for type_name in model_id_types[1:]:
+            formatted_id_types.append(f"| {type_name}")
+        model_id_union = "\n    ".join(formatted_id_types)
     else:
-        union_types = ""
-    all_exports = [f'"{name}"' for name in type_names] + ['"ModelName"']
-    all_exports.sort()  # Sort alphabetically
+        model_id_union = ""
+
+    # Format ModelName union
+    if model_name_types:
+        formatted_name_types = [model_name_types[0]]
+        for type_name in model_name_types[1:]:
+            formatted_name_types.append(f"| {type_name}")
+        model_name_union = "\n    ".join(formatted_name_types)
+    else:
+        model_name_union = ""
+
+    # Build __all__ exports
+    all_exports = (
+        [f'"{name}"' for name in model_id_types]
+        + [f'"{name}"' for name in model_name_types]
+        + modelsdev_exports
+        + ['"ModelId"', '"ModelName"']
+    )
+    all_exports.sort()
     all_exports_str = ",\n    ".join(all_exports)
+
+    # Build the imports section with models.dev separate
+    if modelsdev_import:
+        full_imports = f"{imports_str}\n\n# models.dev aggregator (not included in ModelId/ModelName unions)\n{modelsdev_import}"
+    else:
+        full_imports = imports_str
+
+    # Calculate unique counts
+    unique_ids = len(set(all_model_ids))
+    unique_names = len(set(all_model_names))
+    total_ids = len(all_model_ids)
+    total_names = len(all_model_names)
 
     content = f'''"""Generated model names from all providers.
 
@@ -95,11 +166,18 @@ Total providers: {len(provider_types)}
 from __future__ import annotations
 
 
-{imports_str}
+{full_imports}
 
-# Union of all provider model types
+# Union of all provider model IDs (fully-qualified provider:model format)
+# Total: {total_ids}, Unique: {unique_ids}
+ModelId = (
+    {model_id_union}
+)
+
+# Union of all provider model names (without provider prefix)
+# Total: {total_names}, Unique: {unique_names} (duplicates exist across providers)
 ModelName = (
-    {union_types}
+    {model_name_union}
 )
 
 __all__ = [
@@ -125,17 +203,30 @@ def main() -> None:
         logger.error("No models found")
         return
 
-    # Group models by provider
-    models_by_provider: dict[str, set[str]] = defaultdict(set)
+    # Fetch models.dev separately (aggregator, not a real provider)
+    logger.info("Fetching models from models.dev aggregator...")
+    modelsdev_models = get_all_models_sync(
+        providers=["models.dev"], max_workers=1, max_age=timedelta(days=200)
+    )
+
+    # Group models by provider - store both full ID and just the model name
+    models_by_provider: dict[str, set[tuple[str, str]]] = defaultdict(set)
     for model in models:
-        models_by_provider[model.provider].add(model.pydantic_ai_id)
+        # pydantic_ai_id is "provider:model_name"
+        full_id = model.pydantic_ai_id
+        # Extract just the model name (after the colon)
+        model_name = full_id.split(":", 1)[1] if ":" in full_id else full_id
+        models_by_provider[model.provider].add((full_id, model_name))
 
-    # Sort model IDs for each provider
-    sorted_models_by_provider = {
-        provider: sorted(model_ids) for provider, model_ids in models_by_provider.items()
-    }
+    # Sort and separate IDs and names for each provider
+    sorted_models_by_provider: dict[str, tuple[list[str], list[str]]] = {}
+    for provider, model_tuples in models_by_provider.items():
+        sorted_tuples = sorted(model_tuples)
+        model_ids = [t[0] for t in sorted_tuples]
+        model_names = [t[1] for t in sorted_tuples]
+        sorted_models_by_provider[provider] = (model_ids, model_names)
 
-    total_models = sum(len(ids) for ids in sorted_models_by_provider.values())
+    total_models = sum(len(ids) for ids, _ in sorted_models_by_provider.values())
     logger.info(
         "Found %d unique models from %d providers",
         total_models,
@@ -146,14 +237,50 @@ def main() -> None:
     output_dir = Path("src/tokonomics/model_names")
     output_dir.mkdir(parents=True, exist_ok=True)
 
-    # Generate file for each provider
-    provider_types = {}
-    for provider, model_ids in sorted_models_by_provider.items():
-        type_name = generate_provider_file(provider, model_ids, output_dir)
-        provider_types[provider] = type_name
+    # Collect all model IDs and names for counting
+    all_model_ids: list[str] = []
+    all_model_names: list[str] = []
+    for model_ids, model_names in sorted_models_by_provider.values():
+        all_model_ids.extend(model_ids)
+        all_model_names.extend(model_names)
 
-    # Generate __init__.py with union type
-    generate_init_file(provider_types, output_dir)
+    # Generate file for each provider
+    provider_types: dict[str, tuple[str, str]] = {}
+    for provider, (model_ids, model_names) in sorted_models_by_provider.items():
+        types = generate_provider_file(provider, model_ids, model_names, output_dir)
+        provider_types[provider] = types
+
+    # Generate models.dev file separately
+    modelsdev_types: tuple[str, str] | None = None
+    if modelsdev_models:
+        modelsdev_tuples: set[tuple[str, str]] = set()
+        for model in modelsdev_models:
+            full_id = model.pydantic_ai_id
+            model_name = full_id.split(":", 1)[1] if ":" in full_id else full_id
+            modelsdev_tuples.add((full_id, model_name))
+        sorted_tuples = sorted(modelsdev_tuples)
+        modelsdev_ids = [t[0] for t in sorted_tuples]
+        modelsdev_names = [t[1] for t in sorted_tuples]
+        modelsdev_types = generate_provider_file(
+            "modelsdev", modelsdev_ids, modelsdev_names, output_dir
+        )
+        logger.info(
+            "Generated models.dev with %d models (separate from unions)", len(modelsdev_ids)
+        )
+
+    # Generate __init__.py with union types (excluding models.dev from unions)
+    generate_init_file(provider_types, modelsdev_types, all_model_ids, all_model_names, output_dir)
+
+    # Log unique counts
+    unique_ids = len(set(all_model_ids))
+    unique_names = len(set(all_model_names))
+    logger.info(
+        "ModelId: %d total, %d unique | ModelName: %d total, %d unique",
+        len(all_model_ids),
+        unique_ids,
+        len(all_model_names),
+        unique_names,
+    )
 
     logger.info("Generated model names package at %s", output_dir)
 

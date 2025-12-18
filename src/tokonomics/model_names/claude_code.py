@@ -9,10 +9,18 @@ from __future__ import annotations
 from typing import Literal
 
 
-Claude_CodeModels = Literal[
+# Fully-qualified model IDs (provider:model format)
+ClaudeCodeModelId = Literal[
     "claude-code:haiku",
     "claude-code:opus",
     "claude-code:sonnet",
 ]
 
-__all__ = ["Claude_CodeModels"]
+# Model names without provider prefix
+ClaudeCodeModelName = Literal[
+    "haiku",
+    "opus",
+    "sonnet",
+]
+
+__all__ = ["ClaudeCodeModelId", "ClaudeCodeModelName"]
