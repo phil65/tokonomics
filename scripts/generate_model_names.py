@@ -247,6 +247,21 @@ def main() -> None:
         types = generate_provider_file(provider, model_ids, model_names, output_dir)
         provider_types[provider] = types
 
+    # Generate anthropic-max as a derived provider from anthropic (same models, different auth)
+    if "anthropic" in sorted_models_by_provider:
+        _, anthropic_model_names = sorted_models_by_provider["anthropic"]
+        anthropic_max_ids = [f"anthropic-max:{name}" for name in anthropic_model_names]
+        types = generate_provider_file(
+            "anthropic-max", anthropic_max_ids, anthropic_model_names, output_dir
+        )
+        provider_types["anthropic-max"] = types
+        all_model_ids.extend(anthropic_max_ids)
+        all_model_names.extend(anthropic_model_names)
+        logger.info(
+            "Generated anthropic-max with %d models (derived from anthropic)",
+            len(anthropic_max_ids),
+        )
+
     # Generate models.dev file separately
     modelsdev_types: tuple[str, str] | None = None
     if modelsdev_models:
