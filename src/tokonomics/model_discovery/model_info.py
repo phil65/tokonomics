@@ -40,7 +40,7 @@ class ModelInfo:
     """Unique identifier for the model."""
     name: str
     """Display name of the model."""
-    provider: str
+    provider: str = ""
     """Service provider name (e.g. OpenAI, Anthropic)."""
     description: str | None = None
     """Detailed description of the model's capabilities."""
@@ -66,11 +66,24 @@ class ModelInfo:
     """Timestamp when the model was created/released."""
     metadata: dict[str, Any] = field(default_factory=dict)
     """Provider-specific metadata that doesn't fit in standard fields."""
+    id_override: str | None = None
+    """Optional override for the model ID used in API calls.
+
+    When set, this value is used instead of the auto-generated pydantic_ai_id.
+    Useful for agents like Claude Code that need simple IDs (e.g., 'opus', 'sonnet').
+    """
 
     @property
     def pydantic_ai_id(self) -> str:
-        """Unique pydantic-ai style identifier for the model."""
-        return f"{self.provider}:{self.id}"
+        """Unique pydantic-ai style identifier for the model.
+
+        Returns id_override if set, otherwise returns '{provider}:{id}'.
+        """
+        if self.id_override is not None:
+            return self.id_override
+        if self.provider:
+            return f"{self.provider}:{self.id}"
+        return self.id
 
     @property
     def litellm_id(self) -> str:
