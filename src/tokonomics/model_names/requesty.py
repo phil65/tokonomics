@@ -73,7 +73,6 @@ RequestyModelId = Literal[
     "requesty:openai/gpt-5:priority",
     "requesty:openai/o3-deep-research",
     "requesty:openai/o4-mini-deep-research",
-    "requesty:parasail/parasail-deepseek-v3-0324",
     "requesty:parasail/parasail-kimi-k2-instruct",
     "requesty:parasail/parasail-qwen3-235b-a22b-instruct-2507",
     "requesty:vertex/claude-opus-4-5",
@@ -94,6 +93,7 @@ RequestyModelId = Literal[
     "requesty:xai/grok-code-fast-1",
     "requesty:zai/GLM-4.5",
     "requesty:zai/GLM-4.6",
+    "requesty:zai/GLM-4.7",
 ]
 
 # Model names without provider prefix
@@ -160,7 +160,6 @@ RequestyModelName = Literal[
     "openai/gpt-5:priority",
     "openai/o3-deep-research",
     "openai/o4-mini-deep-research",
-    "parasail/parasail-deepseek-v3-0324",
     "parasail/parasail-kimi-k2-instruct",
     "parasail/parasail-qwen3-235b-a22b-instruct-2507",
     "vertex/claude-opus-4-5",
@@ -181,6 +180,7 @@ RequestyModelName = Literal[
     "xai/grok-code-fast-1",
     "zai/GLM-4.5",
     "zai/GLM-4.6",
+    "zai/GLM-4.7",
 ]
 
 __all__ = ["RequestyModelId", "RequestyModelName"]

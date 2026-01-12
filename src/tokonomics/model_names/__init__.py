@@ -30,7 +30,7 @@ from .zai import ZaiModelId, ZaiModelName
 from .modelsdev import ModelsDevModelId, ModelsDevModelName
 
 # Union of all provider model IDs (fully-qualified provider:model format)
-# Total: 684, Unique: 684
+# Total: 679, Unique: 679
 ModelId = (
     AnthropicModelId
     | AnthropicMaxModelId
@@ -53,7 +53,7 @@ ModelId = (
 )
 
 # Union of all provider model names (without provider prefix)
-# Total: 684, Unique: 590 (duplicates exist across providers)
+# Total: 679, Unique: 587 (duplicates exist across providers)
 ModelName = (
     AnthropicModelName
     | AnthropicMaxModelName
