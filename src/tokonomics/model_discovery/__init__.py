@@ -10,7 +10,12 @@ from typing import Literal, TYPE_CHECKING
 
 from tokonomics.model_discovery.base import ModelProvider
 from tokonomics.model_discovery.model_info import ModelPricing, ModelInfo
-from tokonomics.model_discovery.variants import get_pydantic_ai_variants
+from tokonomics.model_discovery.variants import (
+    get_pydantic_ai_variants,
+    get_reasoning_levels,
+    get_reasoning_settings,
+    supports_reasoning,
+)
 from tokonomics.model_discovery.groq_provider import GroqProvider
 from tokonomics.model_discovery.mistral_provider import MistralProvider
 from tokonomics.model_discovery.openrouter_provider import OpenRouterProvider
@@ -291,5 +296,8 @@ __all__ = [
     "get_all_models",
     "get_all_models_sync",
     "get_pydantic_ai_variants",
+    "get_reasoning_levels",
+    "get_reasoning_settings",
+    "supports_reasoning",
     "token_manager",
 ]

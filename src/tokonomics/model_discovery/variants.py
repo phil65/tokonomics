@@ -1,138 +1,181 @@
-"""Thinking level variants for different model providers.
+"""Thinking/reasoning level configuration for different model providers.
 
-This module generates provider-specific model settings for different thinking/reasoning
-effort levels. The variants are formatted for pydantic-ai's ModelSettings.
+This module provides functions to discover and configure thinking/reasoning levels
+for models that support extended thinking capabilities.
 
-Based on OpenCode's ProviderTransform.variants() implementation.
+Pydantic-ai uses provider-prefixed settings names:
+- Anthropic: `anthropic_thinking`
+- OpenAI: `openai_reasoning_effort`, `openai_reasoning_summary`
+- Google: `google_thinking_config`
 """
 
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, Literal
 
 
-# Common effort level sets
-WIDELY_SUPPORTED_EFFORTS = ["low", "medium", "high"]
-OPENAI_EFFORTS = ["low", "medium", "high"]  # Could add "none", "minimal", "xhigh" later
+ReasoningLevel = Literal["minimal", "low", "medium", "high", "max"]
 
 
-def get_pydantic_ai_variants(  # noqa: PLR0911
+def supports_reasoning(provider: str, model_id: str) -> bool:
+    """Check if a model supports configurable reasoning/thinking levels.
+
+    Args:
+        provider: Provider name (e.g., "anthropic", "openai", "google")
+        model_id: Model identifier
+
+    Returns:
+        True if the model supports configurable reasoning levels.
+    """
+    model_id_lower = model_id.lower()
+
+    # Models with reasoning capability but no configurable variants
+    if any(x in model_id_lower for x in ("deepseek", "minimax", "glm", "mistral")):
+        return False
+
+    # OpenAI o1-mini doesn't support reasoning effort
+    if provider == "openai" and model_id_lower == "o1-mini":
+        return False
+
+    # Supported providers
+    supported_providers = {
+        "anthropic",
+        "openai",
+        "azure",
+        "google",
+        "google-vertex",
+        "google-vertex-anthropic",
+        "amazon-bedrock",
+    }
+
+    return provider in supported_providers
+
+
+def get_reasoning_levels(provider: str, model_id: str) -> list[str]:
+    """Get available reasoning levels for a model.
+
+    Args:
+        provider: Provider name (e.g., "anthropic", "openai", "google")
+        model_id: Model identifier
+
+    Returns:
+        List of available level names, empty if reasoning not supported.
+    """
+    if not supports_reasoning(provider, model_id):
+        return []
+
+    model_id_lower = model_id.lower()
+
+    # Anthropic models
+    if provider in ("anthropic", "google-vertex-anthropic"):
+        return ["high", "max"]
+
+    # Amazon Bedrock with Anthropic models
+    if provider == "amazon-bedrock":
+        if "anthropic" in model_id_lower or "claude" in model_id_lower:
+            return ["high", "max"]
+        return []
+
+    # OpenAI models
+    if provider in ("openai", "azure"):
+        levels = ["low", "medium", "high"]
+        if "gpt-5" in model_id_lower:
+            levels.insert(0, "minimal")
+        return levels
+
+    # Google models
+    if provider in ("google", "google-vertex"):
+        if "2.5" in model_id_lower or "2-5" in model_id_lower:
+            return ["high", "max"]
+        return ["low", "high"]
+
+    return []
+
+
+def get_reasoning_settings(provider: str, model_id: str, level: str) -> dict[str, Any]:
+    """Get pydantic-ai ModelSettings for a reasoning level.
+
+    Args:
+        provider: Provider name (e.g., "anthropic", "openai", "google")
+        model_id: Model identifier
+        level: Reasoning level (e.g., "high", "max", "low", "medium")
+
+    Returns:
+        Dict of pydantic-ai ModelSettings for the specified level.
+
+    Raises:
+        ValueError: If level is not valid for this provider/model.
+    """
+    available = get_reasoning_levels(provider, model_id)
+    if not available:
+        msg = f"Model {provider}:{model_id} does not support configurable reasoning"
+        raise ValueError(msg)
+
+    if level not in available:
+        msg = f"Invalid level '{level}' for {provider}:{model_id}. Available: {available}"
+        raise ValueError(msg)
+
+    model_id_lower = model_id.lower()
+
+    # Anthropic models
+    if provider in ("anthropic", "google-vertex-anthropic"):
+        budgets = {"high": 16000, "max": 31999}
+        return {"anthropic_thinking": {"type": "enabled", "budget_tokens": budgets[level]}}
+
+    # Amazon Bedrock with Anthropic models
+    if provider == "amazon-bedrock":
+        if "anthropic" in model_id_lower or "claude" in model_id_lower:
+            budgets = {"high": 16000, "max": 31999}
+            return {"anthropic_thinking": {"type": "enabled", "budget_tokens": budgets[level]}}
+
+    # OpenAI models
+    if provider in ("openai", "azure"):
+        return {
+            "openai_reasoning_effort": level,
+            "openai_reasoning_summary": "auto",
+        }
+
+    # Google models
+    if provider in ("google", "google-vertex"):
+        if "2.5" in model_id_lower or "2-5" in model_id_lower:
+            budgets = {"high": 16000, "max": 24576}
+            return {
+                "google_thinking_config": {
+                    "include_thoughts": True,
+                    "thinking_budget": budgets[level],
+                }
+            }
+        # Gemini 3+ just enables thinking, level doesn't map to budget
+        return {"google_thinking_config": {"include_thoughts": True}}
+
+    # Should not reach here if supports_reasoning is correct
+    msg = f"No settings implementation for {provider}:{model_id}"
+    raise ValueError(msg)
+
+
+# Keep the old function for backwards compatibility with ModelInfo.pydantic_ai_variants
+def get_pydantic_ai_variants(
     provider: str,
     model_id: str,
-    supports_reasoning: bool,
+    supports_reasoning_flag: bool,
 ) -> dict[str, dict[str, Any]]:
     """Generate thinking level variants based on provider and model capabilities.
 
     Args:
         provider: Provider name (e.g., "anthropic", "openai", "google")
         model_id: Model identifier
-        supports_reasoning: Whether the model supports reasoning/thinking
+        supports_reasoning_flag: Whether the model supports reasoning/thinking
+            (from models.dev metadata)
 
     Returns:
         Dict mapping variant name to pydantic-ai ModelSettings.
         Empty dict if model doesn't support reasoning.
     """
-    if not supports_reasoning:
+    if not supports_reasoning_flag:
         return {}
 
-    model_id_lower = model_id.lower()
-
-    # Some models with reasoning=True don't actually support configurable variants
-    if any(x in model_id_lower for x in ("deepseek", "minimax", "glm", "mistral")):
+    levels = get_reasoning_levels(provider, model_id)
+    if not levels:
         return {}
 
-    # Anthropic models (Claude with extended thinking)
-    if provider == "anthropic":
-        return {
-            "high": {"thinking": {"type": "enabled", "budgetTokens": 16000}},
-            "max": {"thinking": {"type": "enabled", "budgetTokens": 31999}},
-        }
-
-    # OpenAI models (o1, o3, gpt-5, etc.)
-    if provider == "openai":
-        if model_id_lower == "o1-mini":
-            return {}
-        efforts = list(OPENAI_EFFORTS)
-        # GPT-5 models support minimal
-        if "gpt-5" in model_id_lower:
-            efforts.insert(0, "minimal")
-        return {
-            effort: {
-                "reasoningEffort": effort,
-                "reasoningSummary": "auto",
-            }
-            for effort in efforts
-        }
-
-    # Azure (same as OpenAI structure)
-    if provider == "azure":
-        if model_id_lower == "o1-mini":
-            return {}
-        efforts = list(OPENAI_EFFORTS)
-        if "gpt-5" in model_id_lower:
-            efforts.insert(0, "minimal")
-        return {
-            effort: {
-                "reasoningEffort": effort,
-                "reasoningSummary": "auto",
-            }
-            for effort in efforts
-        }
-
-    # Google models (Gemini with thinking)
-    if provider in ("google", "google-vertex"):
-        # Gemini 2.5 uses thinkingBudget
-        if "2.5" in model_id_lower or "2-5" in model_id_lower:
-            return {
-                "high": {"thinkingConfig": {"includeThoughts": True, "thinkingBudget": 16000}},
-                "max": {"thinkingConfig": {"includeThoughts": True, "thinkingBudget": 24576}},
-            }
-        # Gemini 3 uses thinkingLevel
-        return {
-            "low": {"includeThoughts": True, "thinkingLevel": "low"},
-            "high": {"includeThoughts": True, "thinkingLevel": "high"},
-        }
-
-    # Amazon Bedrock
-    if provider == "amazon-bedrock":
-        # Anthropic models on Bedrock use reasoningConfig
-        if "anthropic" in model_id_lower or "claude" in model_id_lower:
-            return {
-                "high": {"reasoningConfig": {"type": "enabled", "budgetTokens": 16000}},
-                "max": {"reasoningConfig": {"type": "enabled", "budgetTokens": 31999}},
-            }
-        # Nova models use maxReasoningEffort
-        return {
-            effort: {"reasoningConfig": {"type": "enabled", "maxReasoningEffort": effort}}
-            for effort in WIDELY_SUPPORTED_EFFORTS
-        }
-
-    # Google Vertex with Anthropic models
-    if provider == "google-vertex-anthropic":
-        return {
-            "high": {"thinking": {"type": "enabled", "budgetTokens": 16000}},
-            "max": {"thinking": {"type": "enabled", "budgetTokens": 31999}},
-        }
-
-    # xAI (Grok)
-    if provider == "xai":
-        return {effort: {"reasoningEffort": effort} for effort in WIDELY_SUPPORTED_EFFORTS}
-
-    # Groq
-    if provider == "groq":
-        efforts = ["none", *WIDELY_SUPPORTED_EFFORTS]
-        return {effort: {"includeThoughts": True, "thinkingLevel": effort} for effort in efforts}
-
-    # Cerebras, TogetherAI, DeepInfra - use reasoningEffort
-    if provider in ("cerebras", "togetherai", "deepinfra"):
-        return {effort: {"reasoningEffort": effort} for effort in WIDELY_SUPPORTED_EFFORTS}
-
-    # OpenRouter - needs special handling based on underlying model
-    if provider == "openrouter":
-        # Only some models support reasoning on OpenRouter
-        if any(x in model_id_lower for x in ("gpt", "gemini-3", "grok")):
-            return {effort: {"reasoning": {"effort": effort}} for effort in OPENAI_EFFORTS}
-        return {}
-
-    # Default: no variants for unknown providers
-    return {}
+    return {level: get_reasoning_settings(provider, model_id, level) for level in levels}
