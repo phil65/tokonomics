@@ -91,6 +91,25 @@ class ModelInfo:
         return f"{self.provider}/{self.id}"
 
     @property
+    def pydantic_ai_variants(self) -> dict[str, dict[str, Any]]:
+        """Thinking level variants as pydantic-ai ModelSettings.
+
+        Returns a dict mapping variant name (e.g., 'high', 'max') to
+        provider-specific model settings for that thinking level.
+
+        Only populated for models that support reasoning/thinking
+        (based on metadata from models.dev).
+
+        Returns:
+            Dict mapping variant name to ModelSettings dict.
+            Empty dict if model doesn't support reasoning variants.
+        """
+        from tokonomics.model_discovery.variants import get_pydantic_ai_variants
+
+        supports_reasoning = self.metadata.get("reasoning", False)
+        return get_pydantic_ai_variants(self.provider, self.id, supports_reasoning)
+
+    @property
     def iconify_icon(self) -> str | None:  # noqa: PLR0911
         """Iconify icon for the model."""
         name = self.name.lower()
