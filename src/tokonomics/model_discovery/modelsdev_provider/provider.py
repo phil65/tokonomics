@@ -19,6 +19,17 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
+# Mapping from models.dev provider names to pydantic-ai provider names
+_PROVIDER_NAME_MAP: dict[str, str] = {
+    "amazon-bedrock": "bedrock",
+    "fireworks-ai": "fireworks",
+    "google": "google-gla",
+    "togetherai": "together",
+    "github-models": "github",
+    "xai": "grok",
+}
+
+
 ModelsDevProviderType = Literal[
     "alibaba",
     "alibaba-cn",
@@ -117,7 +128,9 @@ class ModelsDevProvider(ModelProvider):
     def _parse_model(self, data: dict[str, Any]) -> ModelInfo:
         """Parse models.dev API response into ModelInfo."""
         # Extract provider from context (set during parsing)
-        provider_id = data.get("_provider_id", "unknown")
+        # Map to pydantic-ai provider names
+        raw_provider = data.get("_provider_id", "unknown")
+        provider_id = _PROVIDER_NAME_MAP.get(raw_provider, raw_provider)
 
         # Extract pricing information
         pricing = None

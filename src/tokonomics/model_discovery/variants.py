@@ -14,7 +14,7 @@ from __future__ import annotations
 from typing import Any, Literal
 
 
-ReasoningLevel = Literal["minimal", "low", "medium", "high", "max"]
+ReasoningLevel = Literal["off", "minimal", "low", "medium", "high", "max"]
 
 
 def supports_reasoning(provider: str, model_id: str) -> bool:
@@ -37,21 +37,22 @@ def supports_reasoning(provider: str, model_id: str) -> bool:
     if provider == "openai" and model_id_lower == "o1-mini":
         return False
 
-    # Supported providers
+    # Supported providers (pydantic-ai and models.dev provider names)
     supported_providers = {
         "anthropic",
         "openai",
         "azure",
         "google",
+        "google-gla",
         "google-vertex",
-        "google-vertex-anthropic",
+        "bedrock",
         "amazon-bedrock",
     }
 
     return provider in supported_providers
 
 
-def get_reasoning_levels(provider: str, model_id: str) -> list[str]:
+def get_reasoning_levels(provider: str, model_id: str) -> list[str]:  # noqa: PLR0911
     """Get available reasoning levels for a model.
 
     Args:
@@ -66,33 +67,33 @@ def get_reasoning_levels(provider: str, model_id: str) -> list[str]:
 
     model_id_lower = model_id.lower()
 
-    # Anthropic models
-    if provider in ("anthropic", "google-vertex-anthropic"):
-        return ["high", "max"]
+    # Anthropic models (native or via Bedrock)
+    if provider == "anthropic":
+        return ["off", "high", "max"]
 
-    # Amazon Bedrock with Anthropic models
-    if provider == "amazon-bedrock":
+    # AWS Bedrock with Anthropic models
+    if provider in ("bedrock", "amazon-bedrock"):
         if "anthropic" in model_id_lower or "claude" in model_id_lower:
-            return ["high", "max"]
+            return ["off", "high", "max"]
         return []
 
     # OpenAI models
     if provider in ("openai", "azure"):
-        levels = ["low", "medium", "high"]
+        levels = ["off", "low", "medium", "high"]
         if "gpt-5" in model_id_lower:
-            levels.insert(0, "minimal")
+            levels.insert(1, "minimal")  # after "off"
         return levels
 
     # Google models
-    if provider in ("google", "google-vertex"):
+    if provider in ("google", "google-gla", "google-vertex"):
         if "2.5" in model_id_lower or "2-5" in model_id_lower:
-            return ["high", "max"]
-        return ["low", "high"]
+            return ["off", "high", "max"]
+        return ["off", "low", "high"]
 
     return []
 
 
-def get_reasoning_settings(provider: str, model_id: str, level: str) -> dict[str, Any]:
+def get_reasoning_settings(provider: str, model_id: str, level: str) -> dict[str, Any]:  # noqa: PLR0911
     """Get pydantic-ai ModelSettings for a reasoning level.
 
     Args:
@@ -117,26 +118,35 @@ def get_reasoning_settings(provider: str, model_id: str, level: str) -> dict[str
 
     model_id_lower = model_id.lower()
 
-    # Anthropic models
-    if provider in ("anthropic", "google-vertex-anthropic"):
+    # Anthropic models (native or via Bedrock)
+    if provider == "anthropic":
+        if level == "off":
+            return {"anthropic_thinking": {"type": "disabled"}}
         budgets = {"high": 16000, "max": 31999}
         return {"anthropic_thinking": {"type": "enabled", "budget_tokens": budgets[level]}}
 
-    # Amazon Bedrock with Anthropic models
-    if provider == "amazon-bedrock":
-        if "anthropic" in model_id_lower or "claude" in model_id_lower:
-            budgets = {"high": 16000, "max": 31999}
-            return {"anthropic_thinking": {"type": "enabled", "budget_tokens": budgets[level]}}
+    # AWS Bedrock with Anthropic models
+    if provider in ("bedrock", "amazon-bedrock") and (
+        "anthropic" in model_id_lower or "claude" in model_id_lower
+    ):
+        if level == "off":
+            return {"anthropic_thinking": {"type": "disabled"}}
+        budgets = {"high": 16000, "max": 31999}
+        return {"anthropic_thinking": {"type": "enabled", "budget_tokens": budgets[level]}}
 
     # OpenAI models
     if provider in ("openai", "azure"):
+        if level == "off":
+            return {}  # No reasoning settings = disabled
         return {
             "openai_reasoning_effort": level,
             "openai_reasoning_summary": "auto",
         }
 
     # Google models
-    if provider in ("google", "google-vertex"):
+    if provider in ("google", "google-gla", "google-vertex"):
+        if level == "off":
+            return {"google_thinking_config": {"include_thoughts": False}}
         if "2.5" in model_id_lower or "2-5" in model_id_lower:
             budgets = {"high": 16000, "max": 24576}
             return {
