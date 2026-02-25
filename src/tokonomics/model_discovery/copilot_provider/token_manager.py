@@ -13,9 +13,10 @@ logger = logging.getLogger(__name__)
 
 # Constants for token management
 BASE_URL = "https://api.github.com/copilot_internal/v2/token"
-EDITOR_VERSION = "Neovim/0.6.1"
-EDITOR_PLUGIN_VERSION = "copilot.vim/1.16.0"
-USER_AGENT = "GithubCopilot/1.155.0"
+EDITOR_VERSION = "vscode/1.107.0"
+EDITOR_PLUGIN_VERSION = "copilot-chat/0.35.0"
+USER_AGENT = "GitHubCopilotChat/0.35.0"
+COPILOT_INTEGRATION_ID = "vscode-chat"
 TOKEN_EXPIRY_BUFFER_SECONDS = 120  # Refresh token 2 minutes before expiry
 DELTA = timedelta(seconds=TOKEN_EXPIRY_BUFFER_SECONDS)
 
@@ -23,10 +24,12 @@ DELTA = timedelta(seconds=TOKEN_EXPIRY_BUFFER_SECONDS)
 def get_token_headers(github_oauth_token: str) -> dict[str, str]:
     """Get headers for token request."""
     return {
+        "Accept": "application/json",
         "Authorization": f"Bearer {github_oauth_token}",
         "User-Agent": USER_AGENT,
-        "X-Editor-Version": EDITOR_VERSION,
-        "X-Editor-Plugin-Version": EDITOR_PLUGIN_VERSION,
+        "Editor-Version": EDITOR_VERSION,
+        "Editor-Plugin-Version": EDITOR_PLUGIN_VERSION,
+        "Copilot-Integration-Id": COPILOT_INTEGRATION_ID,
     }
 
 
@@ -121,8 +124,12 @@ class CopilotTokenManager:
         """Generate headers for GitHub Copilot API requests."""
         return {
             "Authorization": f"Bearer {await self.get_token()}",
-            "editor-version": "Neovim/0.9.0",
-            "Copilot-Integration-Id": "vscode-chat",
+            "User-Agent": USER_AGENT,
+            "Editor-Version": EDITOR_VERSION,
+            "Editor-Plugin-Version": EDITOR_PLUGIN_VERSION,
+            "Copilot-Integration-Id": COPILOT_INTEGRATION_ID,
+            "Openai-Intent": "conversation-edits",
+            "X-Initiator": "user",
         }
 
 
