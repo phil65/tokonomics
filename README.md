@@ -9,7 +9,6 @@
 [![Implementation](https://img.shields.io/pypi/implementation/tokonomics.svg)](https://pypi.org/project/tokonomics/)
 [![Releases](https://img.shields.io/github/downloads/phil65/tokonomics/total.svg)](https://github.com/phil65/tokonomics/releases)
 [![Github Contributors](https://img.shields.io/github/contributors/phil65/tokonomics)](https://github.com/phil65/tokonomics/graphs/contributors)
-[![Github Discussions](https://img.shields.io/github/discussions/phil65/tokonomics)](https://github.com/phil65/tokonomics/discussions)
 [![Github Forks](https://img.shields.io/github/forks/phil65/tokonomics)](https://github.com/phil65/tokonomics/forks)
 [![Github Issues](https://img.shields.io/github/issues/phil65/tokonomics)](https://github.com/phil65/tokonomics/issues)
 [![Github Issues](https://img.shields.io/github/issues-pr/phil65/tokonomics)](https://github.com/phil65/tokonomics/pulls)

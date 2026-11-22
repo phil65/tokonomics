@@ -48,7 +48,6 @@ dependencies = [
 
 [project.urls]
 "Code coverage" = "https://app.codecov.io/gh/phil65/tokonomics"
-Discussions = "https://github.com/phil65/tokonomics/discussions"
 Documentation = "https://phil65.github.io/tokonomics/"
 Homepage = "https://github.com/phil65/tokonomics"
 Issues = "https://github.com/phil65/tokonomics/issues"
@@ -75,8 +74,10 @@ docs = [
   # Only add below (Copier)
 ]
 lint = [
-  "ruff",
-  "ty",
+  # Pinned on purpose: CI, pre-commit and editors all run exactly these versions.
+  # Bump them here (template) and roll out via `copier update`.
+  "ruff==0.17.6",
+  "ty==0.0.107",
   # Only add below (Copier)
 ]
 
