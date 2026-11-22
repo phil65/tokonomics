@@ -99,7 +99,7 @@ async def get_model_costs(
         data: dict[str, Any] = await get_json(
             LITELLM_PRICES_URL,
             cache=not _is_testing(),
-            cache_ttl=_CACHE_TIMEOUT,
+            cache_ttl=cache_timeout,
             return_type=dict,
         )
         assert isinstance(data, dict), f"Expected dict, got {type(data)}"
@@ -224,7 +224,7 @@ async def get_available_models(
         data: dict[str, Any] = await get_json(
             LITELLM_PRICES_URL,
             cache=not _is_testing(),
-            cache_ttl=_CACHE_TIMEOUT,
+            cache_ttl=cache_timeout,
             return_type=dict,
         )
         assert isinstance(data, dict), f"Expected dict, got {type(data)}"
@@ -272,7 +272,7 @@ async def get_model_capabilities(
         data: dict[str, Any] = await get_json(
             LITELLM_PRICES_URL,
             cache=not _is_testing(),
-            cache_ttl=_CACHE_TIMEOUT,
+            cache_ttl=cache_timeout,
             return_type=dict,
         )
         assert isinstance(data, dict), f"Expected dict, got {type(data)}"
