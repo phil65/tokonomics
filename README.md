@@ -26,42 +26,34 @@
 [Read the documentation!](https://phil65.github.io/tokonomics/)
 
 
-Calculate costs for LLM usage based on token counts using LiteLLM's pricing data.
+Calculate LLM usage costs from token counts using [LiteLLM's pricing data](https://github.com/BerriAI/litellm),
+and discover available models (pricing, context window, modalities) across many providers.
 
 ## Installation
 
 ```bash
 pip install tokonomics
+# optional: exact token counting via tiktoken
+pip install "tokonomics[tiktoken]"
 ```
 
-## Features
-
-- Automatic cost calculation for various LLM models
-- Detailed cost breakdown (prompt, completion, and total costs)
-- Caches pricing data locally (24-hour default cache duration)
-- Supports multiple model name formats (e.g., "gpt-4", "openai:gpt-4")
-- Asynchronous API
-- Fully typed with runtime type checking
-- Zero configuration required
-
-## Usage
+## Quickstart
 
 ```python
 import asyncio
+
 from tokonomics import calculate_token_cost
 
 
 async def main():
-    # Calculate cost with token counts
     costs = await calculate_token_cost(
-        model="gpt-4",
+        model="gpt-4o",
         input_tokens=100,  # tokens used in the prompt
         output_tokens=50,  # tokens used in the completion
     )
-
     if costs:
-        print(f"Prompt cost: ${costs.input_cost:.6f}")
-        print(f"Completion cost: ${costs.output_cost:.6f}")
+        print(f"Input cost: ${costs.input_cost:.6f}")
+        print(f"Output cost: ${costs.output_cost:.6f}")
         print(f"Total cost: ${costs.total_cost:.6f}")
     else:
         print("Could not determine cost for model")
@@ -70,60 +62,89 @@ async def main():
 asyncio.run(main())
 ```
 
-You can customize the cache timeout:
+## Features
+
+- Cost calculation for thousands of models from LiteLLM's pricing JSON
+  (`Decimal` input/output/total breakdown)
+- Flexible model names: `"gpt-4o"`, `"openai:gpt-4o"`, `"openai/gpt-4o"` (case-insensitive)
+- Model capabilities: context limits, function calling, vision, audio, prompt caching
+- Model discovery across providers (OpenAI, Anthropic, OpenRouter, Groq, Mistral, Gemini,
+  GitHub Models, Copilot, DeepSeek, xAI, Ollama, models.dev, ...)
+- Token counting with tiktoken, transformers or a heuristic fallback
+- pydantic-ai integration via `calculate_pydantic_cost`
+- Generated `Literal` types of known model ids (`tokonomics.ModelName`)
+- Async API, fully typed, pricing data cached locally
+
+## Usage
+
+### Model costs and capabilities
 
 ```python
-from tokonomics import get_model_costs, clear_cache
+from tokonomics import get_model_capabilities, get_model_costs, reset_cache
 
-# Get model costs with custom cache duration (e.g., 1 hour)
-costs = await get_model_costs("gpt-4", cache_timeout=3600)
+# Per-token prices; cache_timeout controls how long pricing data is cached (seconds)
+costs = await get_model_costs("openai:gpt-4o", cache_timeout=3600)
 if costs:
     print(f"Input cost per token: ${costs['input_cost_per_token']}")
     print(f"Output cost per token: ${costs['output_cost_per_token']}")
 
-clear_cache()
+caps = await get_model_capabilities("gpt-4o")
+if caps:
+    print(caps.max_input_tokens, caps.supports_vision, caps.supports_function_calling)
+
+reset_cache()  # clear the in-memory cache
 ```
 
-
-### Pydantic-AI Integration
-
-If you're using pydantic-ai, you can directly calculate costs from its Usage objects:
+### Pydantic-AI integration
 
 ```python
 from tokonomics import calculate_pydantic_cost
 
-# Assuming you have a pydantic-ai Usage object
-costs = await calculate_pydantic_cost(
-    model="gpt-4",
-    usage=usage_object,
-)
-
+# `usage` is a pydantic-ai usage object (anything with input_tokens / output_tokens)
+costs = await calculate_pydantic_cost(model="gpt-4o", usage=result.usage())
 if costs:
-    print(f"Prompt cost: ${costs.input_cost:.6f}")
-    print(f"Completion cost: ${costs.output_cost:.6f}")
     print(f"Total cost: ${costs.total_cost:.6f}")
 ```
 
-## Model Name Support
+### Model discovery
 
-The library supports multiple formats for model names:
-- Direct model names: `"gpt-4"`
-- Provider-prefixed: `"openai:gpt-4"`
-- Provider-path style: `"openai/gpt-4"`
+```python
+from tokonomics import get_all_models
 
-Names are matched case-insensitively.
+# Without `providers`, all providers whose API keys are set are queried.
+models = await get_all_models(providers=["openai", "anthropic", "openrouter"])
+for model in models[:5]:
+    print(model.pydantic_ai_id, model.context_window, model.pricing)
+```
 
-## Data Source
+Providers read their API keys from the usual environment variables
+(`OPENROUTER_API_KEY`, `GROQ_API_KEY`, `MISTRAL_API_KEY`, `GEMINI_API_KEY`, ...).
+A synchronous variant is available as `tokonomics.model_discovery.get_all_models_sync`.
 
-Pricing data is sourced from [LiteLLM's pricing repository](https://github.com/BerriAI/litellm) and is automatically cached locally using `hishel`. The cache is updated when pricing data is not found or has expired.
+### Token counting
+
+```python
+from tokonomics import count_tokens
+
+count_tokens("Hello world, how are you?", model="gpt-4o")
+```
+
+Uses tiktoken if installed, then transformers, then a rough approximation.
+
+## Data sources
+
+Pricing and capability data come from
+[LiteLLM's model_prices_and_context_window.json](https://github.com/BerriAI/litellm);
+model discovery uses the providers' model APIs and [models.dev](https://models.dev).
+Responses are cached locally (24 hours by default).
 
 ## Requirements
 
-- Python 3.12+
-- `httpx`
-- `platformdirs`
-- `upath`
-- `pydantic` (≥ 2.0)
+- Python 3.13+
+
+## Documentation
+
+Full API reference: https://phil65.github.io/tokonomics/
 
 ## License
 
