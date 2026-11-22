@@ -284,7 +284,8 @@ async def get_model_capabilities(
                 continue
 
             # Handle token limits with defaults
-            max_tokens_raw = info.get("max_tokens", 0)
+            # LiteLLM dropped the legacy "max_tokens" field (it mirrored the output limit).
+            max_tokens_raw = info.get("max_tokens", info.get("max_output_tokens", 0))
             max_input_raw = info.get("max_input_tokens", max_tokens_raw)
             max_output_raw = info.get("max_output_tokens", max_tokens_raw)
 
