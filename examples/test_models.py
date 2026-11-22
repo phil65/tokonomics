@@ -68,9 +68,11 @@ def main():
                     print(f"  Input cost: ${model_config.input_cost_per_token:.8f}/token")
                 if model_config.output_cost_per_token is not None:
                     print(f"  Output cost: ${model_config.output_cost_per_token:.8f}/token")
-            elif isinstance(model_config, AudioTranscriptionModel):
-                if model_config.input_cost_per_second is not None:
-                    print(f"  Input cost: ${model_config.input_cost_per_second:.6f}/second")
+            elif (
+                isinstance(model_config, AudioTranscriptionModel)
+                and model_config.input_cost_per_second is not None
+            ):
+                print(f"  Input cost: ${model_config.input_cost_per_second:.6f}/second")
 
             if isinstance(model_config, ChatCompletionModel):
                 print(f"  Function calling: {model_config.supports_function_calling}")

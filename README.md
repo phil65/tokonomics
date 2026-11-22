@@ -50,11 +50,12 @@ pip install tokonomics
 import asyncio
 from tokonomics import calculate_token_cost
 
+
 async def main():
     # Calculate cost with token counts
     costs = await calculate_token_cost(
         model="gpt-4",
-        input_tokens=100,    # tokens used in the prompt
+        input_tokens=100,  # tokens used in the prompt
         output_tokens=50,  # tokens used in the completion
     )
 
@@ -64,6 +65,7 @@ async def main():
         print(f"Total cost: ${costs.total_cost:.6f}")
     else:
         print("Could not determine cost for model")
+
 
 asyncio.run(main())
 ```

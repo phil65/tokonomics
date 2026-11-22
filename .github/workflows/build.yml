@@ -31,6 +31,7 @@ jobs:
           enable-cache: true
           cache-dependency-glob: pyproject.toml
           cache-suffix: py${{ matrix.python_version }}
+          python-version: ${{ matrix.python_version }}
 
       - name: Install dependencies (uv sync)
         run: uv sync --all-extras --no-group docs --no-group lint
@@ -43,8 +44,8 @@ jobs:
         with:
           args: "format --check"
 
-      - name: Static type checking (MyPy)
-        run: uv run --no-group docs mypy src/tokonomics/
+      - name: Static type checking (ty)
+        run: uv run --no-group docs ty check
 
       - name: Run tests
         run: uv run --no-group docs pytest --cov-report=xml --cov=src/tokonomics/ --cov-report=term-missing
