@@ -2,7 +2,7 @@
 
 [project]
 name = "tokonomics"
-version = "1.3.0"
+version = "1.4.0"
 description = "Calculate LLM usage costs from token counts and discover models and pricing across providers"
 readme = "README.md"
 requires-python = ">=3.13"
