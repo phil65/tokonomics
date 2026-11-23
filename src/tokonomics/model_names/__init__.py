@@ -10,8 +10,8 @@ from __future__ import annotations
 from .anthropic import AnthropicModelId, AnthropicModelName
 from .anthropic_max import AnthropicMaxModelId, AnthropicMaxModelName
 from .cerebras import CerebrasModelId, CerebrasModelName
-from .claude_code import ClaudeCodeModelId, ClaudeCodeModelName
 from .cohere import CohereModelId, CohereModelName
+from .comet import CometModelId, CometModelName
 from .copilot import CopilotModelId, CopilotModelName
 from .deepseek import DeepseekModelId, DeepseekModelName
 from .gemini import GeminiModelId, GeminiModelName
@@ -30,13 +30,13 @@ from .zai import ZaiModelId, ZaiModelName
 from .modelsdev import ModelsDevModelId, ModelsDevModelName
 
 # Union of all provider model IDs (fully-qualified provider:model format)
-# Total: 682, Unique: 682
+# Total: 1573, Unique: 1573
 ModelId = (
     AnthropicModelId
     | AnthropicMaxModelId
     | CerebrasModelId
-    | ClaudeCodeModelId
     | CohereModelId
+    | CometModelId
     | CopilotModelId
     | DeepseekModelId
     | GeminiModelId
@@ -53,13 +53,13 @@ ModelId = (
 )
 
 # Union of all provider model names (without provider prefix)
-# Total: 682, Unique: 587 (duplicates exist across providers)
+# Total: 1573, Unique: 1357 (duplicates exist across providers)
 ModelName = (
     AnthropicModelName
     | AnthropicMaxModelName
     | CerebrasModelName
-    | ClaudeCodeModelName
     | CohereModelName
+    | CometModelName
     | CopilotModelName
     | DeepseekModelName
     | GeminiModelName
@@ -82,10 +82,10 @@ __all__ = [
     "AnthropicModelName",
     "CerebrasModelId",
     "CerebrasModelName",
-    "ClaudeCodeModelId",
-    "ClaudeCodeModelName",
     "CohereModelId",
     "CohereModelName",
+    "CometModelId",
+    "CometModelName",
     "CopilotModelId",
     "CopilotModelName",
     "DeepseekModelId",

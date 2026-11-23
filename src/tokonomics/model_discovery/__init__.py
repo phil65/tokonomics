@@ -31,7 +31,6 @@ from tokonomics.model_discovery.vercel_gateway_provider import VercelGatewayProv
 from tokonomics.model_discovery.cache import clear_models_cache, get_cached, store
 from tokonomics.model_discovery.modelsdev_provider import ModelsDevProvider
 from tokonomics.model_discovery.ollama_provider import OllamaProvider
-from tokonomics.model_discovery.claude_code_provider import ClaudeCodeProvider
 # from tokonomics.model_discovery.cerebras_provider import CerebrasProvider
 # from tokonomics.model_discovery.cohere_provider import CohereProvider
 
@@ -81,7 +80,6 @@ ProviderType = Literal[
     "ollama",
     "moonshotai",
     "zai",
-    "claude-code",
 ]
 
 
@@ -109,7 +107,6 @@ _PROVIDER_MAP: dict[ProviderType, Callable[[], ModelProvider]] = {
     "ollama": OllamaProvider,
     "zai": ZAIProvider,
     "moonshotai": MoonshotProvider,
-    "claude-code": ClaudeCodeProvider,
 }
 
 
@@ -282,7 +279,6 @@ async def get_all_models(
 __all__ = [
     "AnthropicProvider",
     "CerebrasProvider",
-    "ClaudeCodeProvider",
     "CohereProvider",
     "CometProvider",
     "CopilotProvider",

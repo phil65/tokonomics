@@ -28,9 +28,11 @@ the names exported from `src/tokonomics/__init__.py` as public API and keep them
     `litellm_id`, `pydantic_ai_variants`, `format()`).
   - `*_provider/provider.py`: one provider per directory (OpenRouter, Groq, Mistral,
     GitHub, Copilot, Gemini, DeepSeek, Requesty, xAI, Comet, Novita, Vercel Gateway,
-    Ollama, Claude Code with static models, models.dev).
+    Ollama, models.dev).
   - `__init__.py`: `_PROVIDER_MAP`, `ProviderType` literal, `get_all_models` /
-    `get_all_models_sync`. Anthropic/OpenAI/Cohere/Cerebras/... are
+    `get_all_models_sync`. They keep each provider's parsed list in memory
+    (`cache.py`, `MODELS_CACHE_TTL`, per provider and headers) and filter it per call;
+    discovery requests are HTTP-cached for the same 24 h. Anthropic/OpenAI/Cohere/Cerebras/... are
     `partial(ModelsDevProvider, provider=...)`, not their own classes.
   - `variants.py`: reasoning/thinking level settings for pydantic-ai.
   - `copilot_provider/token_manager.py`: `CopilotTokenManager` (GitHub OAuth to Copilot token).

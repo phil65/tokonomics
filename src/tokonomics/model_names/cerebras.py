@@ -11,12 +11,12 @@ from typing import Literal
 
 # Fully-qualified model IDs (provider:model format)
 CerebrasModelId = Literal[
-    "cerebras:zai-glm-4.7",
+    "cerebras:qwen-3.8-27b",
 ]
 
 # Model names without provider prefix
 CerebrasModelName = Literal[
-    "zai-glm-4.7",
+    "qwen-3.8-27b",
 ]
 
 __all__ = ["CerebrasModelId", "CerebrasModelName"]

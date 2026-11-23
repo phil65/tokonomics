@@ -11,14 +11,14 @@ from typing import Literal
 
 # Fully-qualified model IDs (provider:model format)
 DeepseekModelId = Literal[
-    "deepseek:deepseek-chat",
-    "deepseek:deepseek-reasoner",
+    "deepseek:deepseek-flash",
+    "deepseek:deepseek-v4-pro",
 ]
 
 # Model names without provider prefix
 DeepseekModelName = Literal[
-    "deepseek-chat",
-    "deepseek-reasoner",
+    "deepseek-flash",
+    "deepseek-v4-pro",
 ]
 
 __all__ = ["DeepseekModelId", "DeepseekModelName"]

@@ -141,6 +141,7 @@ asyncio_mode = "auto"
 [tool.ruff]
 line-length = 100
 extend-exclude = ["docs", "src/tokonomics/model_names"]
+force-exclude = true  # Also for files named on the command line (pre-commit hooks)
 target-version = "py313"
 
 [tool.ruff.lint]
