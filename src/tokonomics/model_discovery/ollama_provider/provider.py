@@ -6,6 +6,7 @@ import socket
 from typing import TYPE_CHECKING, Any
 
 from tokonomics.model_discovery.base import ModelProvider
+from tokonomics.model_discovery.cache import MODELS_CACHE_TTL
 from tokonomics.model_discovery.model_info import ModelInfo, ModelPricing
 
 
@@ -51,6 +52,7 @@ class OllamaProvider(ModelProvider):
                 headers=self.headers,
                 params=self.params,
                 cache=True,
+                cache_ttl=MODELS_CACHE_TTL,
                 return_type=dict,
             )
 
@@ -68,6 +70,7 @@ class OllamaProvider(ModelProvider):
                         json_data={"name": item["name"]},
                         headers=self.headers,
                         cache=True,
+                        cache_ttl=MODELS_CACHE_TTL,
                         return_type=dict,
                     )
                     models.append(self._parse_model(item, detail_data))

@@ -28,6 +28,7 @@ from tokonomics.model_discovery.xai_provider import XAIProvider
 from tokonomics.model_discovery.comet_provider import CometProvider
 from tokonomics.model_discovery.novita_provider import NovitaProvider
 from tokonomics.model_discovery.vercel_gateway_provider import VercelGatewayProvider
+from tokonomics.model_discovery.cache import clear_models_cache, get_cached, store
 from tokonomics.model_discovery.modelsdev_provider import ModelsDevProvider
 from tokonomics.model_discovery.ollama_provider import OllamaProvider
 from tokonomics.model_discovery.claude_code_provider import ClaudeCodeProvider
@@ -127,8 +128,10 @@ def get_all_models_sync(
         max_workers: Maximum number of worker threads.
                      Defaults to min(32, os.cpu_count() * 5)
         include_deprecated: Whether to include deprecated models. Defaults to False.
-        max_age: Only include models created within this duration.
-                 Models without created_at are always included.
+        max_age: Only include models released within this duration (by their
+                 ``created_at``; models without one are always included). A filter on
+                 the models' age, not a cache age: the model lists are cached for
+                 ``MODELS_CACHE_TTL`` whatever it is.
 
     Returns:
         list[ModelInfo]: Combined list of models from all providers.
@@ -162,7 +165,9 @@ def get_all_models_sync(
                 if provider_name == "models.dev"
                 else _PROVIDER_MAP[provider_name]()
             )
-            models = anyenv.run_sync(provider.get_models())
+            if (models := get_cached(provider_name, provider)) is None:
+                models = anyenv.run_sync(provider.get_models())
+                store(provider_name, provider, models)
             if not include_deprecated:
                 models = [model for model in models if not model.is_deprecated]
             models = [model for model in models if not model.is_embedding]
@@ -205,8 +210,10 @@ async def get_all_models(
         providers: Sequence of provider names to use. Defaults to available providers.
                    Use "models.dev" to fetch all models from the models.dev aggregator.
         include_deprecated: Whether to include deprecated models. Defaults to False.
-        max_age: Only include models created within this duration.
-                 Models without created_at are always included.
+        max_age: Only include models released within this duration (by their
+                 ``created_at``; models without one are always included). A filter on
+                 the models' age, not a cache age: the model lists are cached for
+                 ``MODELS_CACHE_TTL`` whatever it is.
 
     Returns:
         list[ModelInfo]: Combined list of models from all providers.
@@ -236,7 +243,9 @@ async def get_all_models(
                 if provider_name == "models.dev"
                 else _PROVIDER_MAP[provider_name]()
             )
-            models = await provider.get_models()
+            if (models := get_cached(provider_name, provider)) is None:
+                models = await provider.get_models()
+                store(provider_name, provider, models)
             if not include_deprecated:
                 models = [model for model in models if not model.is_deprecated]
             models = [model for model in models if not model.is_embedding]
@@ -293,6 +302,7 @@ __all__ = [
     "RequestyProvider",
     "VercelGatewayProvider",
     "XAIProvider",
+    "clear_models_cache",
     "get_all_models",
     "get_all_models_sync",
     "get_pydantic_ai_variants",

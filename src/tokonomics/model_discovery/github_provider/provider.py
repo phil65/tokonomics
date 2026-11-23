@@ -7,6 +7,7 @@ import os
 from typing import TYPE_CHECKING, Any
 
 from tokonomics.model_discovery.base import ModelProvider
+from tokonomics.model_discovery.cache import MODELS_CACHE_TTL
 from tokonomics.model_discovery.model_info import ModelInfo
 
 
@@ -77,6 +78,7 @@ class GitHubProvider(ModelProvider):
                 json=params,
                 headers=self.headers,
                 cache=True,
+                cache_ttl=MODELS_CACHE_TTL,
             )
             data = await response.json()
             if not isinstance(data, dict) or "summaries" not in data:

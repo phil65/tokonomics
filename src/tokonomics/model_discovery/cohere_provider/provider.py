@@ -6,6 +6,7 @@ import os
 from typing import TYPE_CHECKING, Any
 
 from tokonomics.model_discovery.base import ModelProvider
+from tokonomics.model_discovery.cache import MODELS_CACHE_TTL
 from tokonomics.model_discovery.model_info import ModelInfo
 
 
@@ -85,6 +86,7 @@ class CohereProvider(ModelProvider):
                 headers=self.headers,
                 params=self.params,
                 cache=True,
+                cache_ttl=MODELS_CACHE_TTL,
                 return_type=dict,
             )
 

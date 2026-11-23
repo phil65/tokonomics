@@ -5,6 +5,8 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING, Any
 
+from tokonomics.model_discovery.cache import MODELS_CACHE_TTL
+
 
 if TYPE_CHECKING:
     from tokonomics.model_discovery.model_info import ModelInfo
@@ -36,6 +38,7 @@ class ModelProvider(ABC):
                 headers=self.headers,
                 params=self.params,
                 cache=True,
+                cache_ttl=MODELS_CACHE_TTL,
                 return_type=dict,
             )
 
