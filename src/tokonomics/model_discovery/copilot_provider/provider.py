@@ -21,6 +21,17 @@ logger = logging.getLogger(__name__)
 COPILOT_EXCLUDED_MODELS = set[str]()  # "o1"
 
 
+def _offered(model: dict[str, Any]) -> bool:
+    """Whether Copilot offers ``model`` in its model picker.
+
+    ``model_picker_enabled`` used to say so; the API now leaves it false and marks picker
+    models with a ``model_picker_category`` instead. Models the account has not enabled
+    (``policy.state == "disabled"``) are offered all the same: the state is kept in the
+    model's metadata.
+    """
+    return bool(model.get("model_picker_enabled") or model.get("model_picker_category"))
+
+
 class CopilotProvider(ModelProvider):
     """GitHub Copilot API provider."""
 
@@ -57,6 +68,7 @@ class CopilotProvider(ModelProvider):
         model_family = capabilities.get("family", "")
         model_version = data.get("version", "")
 
+        policy = data.get("policy") or {}
         # Create description
         description = ""
         if model_family:
@@ -88,10 +100,11 @@ class CopilotProvider(ModelProvider):
             description=description.strip() or None,
             context_window=context_window,
             max_output_tokens=max_output_tokens,
-            is_deprecated=not data.get("model_picker_enabled", True),
+            is_deprecated=not _offered(data),
             owned_by=data.get("vendor"),
             input_modalities=input_modalities,
             output_modalities=output_modalities,
+            metadata={"policy_state": policy.get("state")} if isinstance(policy, dict) else {},
         )
 
     async def get_models(self) -> list[ModelInfo]:
@@ -108,8 +121,7 @@ class CopilotProvider(ModelProvider):
                 raise RuntimeError(msg)  # noqa: TRY301
             models = []
             for model in data["data"]:
-                # Skip models without model picker enabled
-                if not model.get("model_picker_enabled", False):
+                if not _offered(model):  # Not in the model picker, or disabled for the account
                     continue
                 capabilities = model.get("capabilities", {})
                 if (

@@ -11,6 +11,10 @@ from tokonomics.model_discovery.base import ModelProvider
 from tokonomics.model_discovery.model_info import ModelInfo
 
 
+COMET_PLACEHOLDER = 1626777600
+"""The ``created`` Comet's API gives every model (2021-07-20), not a release date."""
+
+
 class CometProvider(ModelProvider):
     """Comet API provider."""
 
@@ -31,9 +35,10 @@ class CometProvider(ModelProvider):
 
     def _parse_model(self, data: dict[str, Any]) -> ModelInfo:
         """Parse Comet API response into ModelInfo."""
-        # Parse created timestamp
+        # Comet gives every model the same placeholder ``created`` (2021-07-20), which
+        # says nothing about when a model came out: treat it as unknown
         created_at = None
-        if created_timestamp := data.get("created"):
+        if (created_timestamp := data.get("created")) and created_timestamp != COMET_PLACEHOLDER:
             with contextlib.suppress(ValueError, TypeError, OverflowError):
                 created_at = datetime.fromtimestamp(created_timestamp)
 
