@@ -39,7 +39,7 @@ classifiers = [
   "Typing :: Typed",
 ]
 dependencies = [
-  "anyenv[httpx]>=0.3.2",
+  "anyenv[httpx2]>=2.1.0",
   # Only add below (Copier)
   "platformdirs>=4.3.6",
   "pydantic",
@@ -65,7 +65,6 @@ dev = [
   # Only add below (Copier)
   "pytest-asyncio>=0.25.0",
   "pytest-cov",
-  "respx>=0.22.0",
 ]
 benchmark = ["pyinstrument"]
 docs = [

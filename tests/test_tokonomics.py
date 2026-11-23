@@ -4,9 +4,8 @@ from __future__ import annotations
 
 from decimal import Decimal
 
-import httpx
+import httpx2
 import pytest
-import respx
 
 from tokonomics import calculate_token_cost, core, get_model_costs
 import tokonomics.core
@@ -41,14 +40,30 @@ def setup_teardown():
 
 
 @pytest.fixture
-def mock_litellm_api():
-    """Mock LiteLLM API responses."""
-    respx_mock = respx.mock(assert_all_called=False)
-    respx_mock.start()
-    route = respx_mock.get(core.LITELLM_PRICES_URL)
-    route.mock(return_value=httpx.Response(200, json=SAMPLE_PRICING_DATA))
-    yield respx_mock
-    respx_mock.stop()
+def mock_litellm_api(monkeypatch: pytest.MonkeyPatch) -> dict[str, httpx2.Response]:
+    """Mock LiteLLM API responses.
+
+    Every httpx2.AsyncClient created during the test uses a MockTransport that
+    answers from the returned URL -> response mapping (404 for unknown URLs).
+    """
+    responses = {core.LITELLM_PRICES_URL: httpx2.Response(200, json=SAMPLE_PRICING_DATA)}
+
+    def handler(request: httpx2.Request) -> httpx2.Response:
+        response = responses.get(str(request.url))
+        if response is None:
+            return httpx2.Response(404)
+        return httpx2.Response(response.status_code, content=response.content)
+
+    transport = httpx2.MockTransport(handler)
+    real_client = httpx2.AsyncClient
+
+    class MockClient(real_client):
+        def __init__(self, *args, **kwargs):
+            kwargs["transport"] = transport
+            super().__init__(*args, **kwargs)
+
+    monkeypatch.setattr(httpx2, "AsyncClient", MockClient)
+    return responses
 
 
 async def test_get_model_costs_success(mock_litellm_api):
@@ -126,9 +141,8 @@ async def test_calculate_token_cost_unknown_model(mock_litellm_api):
 
 async def test_api_error(mock_litellm_api):
     """Test behavior when API request fails."""
-    # Clear the route and add a new one that returns error
-    mock_litellm_api.routes.clear()
-    mock_litellm_api.get(core.LITELLM_PRICES_URL).mock(return_value=httpx.Response(500))
+    # Make the pricing endpoint return an error
+    mock_litellm_api[core.LITELLM_PRICES_URL] = httpx2.Response(500)
     # Clear specific cache entries for this test
     cache_key = "gpt-4_costs"
     if cache_key in tokonomics.core._cost_cache:

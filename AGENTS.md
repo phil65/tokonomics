@@ -51,7 +51,7 @@ the names exported from `src/tokonomics/__init__.py` as public API and keep them
 | LiteLLM schema models | `src/tokonomics/data_models.py`, `src/tokonomics/registry.py` |
 | Generated model name literals | `scripts/generate_model_names.py` -> `src/tokonomics/model_names/` |
 | Public exports | `src/tokonomics/__init__.py` |
-| Tests | `tests/` (`test_tokonomics.py` uses respx mocks; others hit the network) |
+| Tests | `tests/` (`test_tokonomics.py` mocks HTTP with `httpx2.MockTransport`; others hit the network) |
 
 ## Commands
 
@@ -73,7 +73,7 @@ Python 3.13/3.14 x Linux/macOS/Windows (3.14 is `continue-on-error`).
 ## Conventions
 
 - Python >= 3.13, `from __future__ import annotations`, Google-style docstrings, line length 100.
-- Network calls go through `anyenv` (`get_json`, `post`, ...), not httpx directly.
+- Network calls go through `anyenv` (`get_json`, `post`, ...), not httpx2 directly.
 - Heavy or optional imports are done inside functions; keep `import tokonomics` cheap and
   free of optional deps.
 - Prices: LiteLLM data is per token; `ModelPricing` in model discovery is also per token.
