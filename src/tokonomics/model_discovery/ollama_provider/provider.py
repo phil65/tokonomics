@@ -39,7 +39,7 @@ class OllamaProvider(ModelProvider):
             # Try to connect to the Ollama server
             with socket.create_connection((host, port), timeout=2):
                 return True
-        except (ValueError, OSError):
+        except ValueError, OSError:
             return False
 
     async def get_models(self) -> list[ModelInfo]:

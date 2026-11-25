@@ -144,7 +144,7 @@ class VercelGatewayProvider(ModelProvider):
             return None
         try:
             return float(price_str)
-        except (ValueError, TypeError):
+        except ValueError, TypeError:
             return None
 
 

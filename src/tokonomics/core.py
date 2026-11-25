@@ -294,7 +294,7 @@ async def get_model_capabilities(
                 max_tokens = int(_safe_numeric_convert(max_tokens_raw))
                 max_input = int(_safe_numeric_convert(max_input_raw))
                 max_output = int(_safe_numeric_convert(max_output_raw))
-            except (ValueError, TypeError):
+            except ValueError, TypeError:
                 max_tokens = max_input = max_output = 0
 
             capabilities = ModelCapabilities(
