@@ -63,7 +63,7 @@ uv run pytest                             # tests
 uvx ruff check . && uvx ruff format --check .
 uv run ty check                           # type check (checks src/ only)
 uv run deptry src                         # dependency hygiene
-uv run mkdocs-mknodes build               # docs (serve: uv run mkdocs-mknodes serve)
+uv run mknodes build                      # docs (serve: uv run mknodes serve)
 uv build
 uv run python scripts/generate_model_names.py   # regenerate model_names/ (needs network/API keys)
 ```
