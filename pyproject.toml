@@ -5,7 +5,7 @@ name = "tokonomics"
 version = "1.4.0"
 description = "Calculate LLM usage costs from token counts and discover models and pricing across providers"
 readme = "README.md"
-requires-python = ">=3.13"
+requires-python = ">=3.14"
 license = "MIT"
 license-files = ["LICENSE"]
 authors = [
@@ -31,7 +31,6 @@ classifiers = [
   "Operating System :: OS Independent",
   "Programming Language :: Python :: 3",
   "Programming Language :: Python :: 3 :: Only",
-  "Programming Language :: Python :: 3.13",
   "Programming Language :: Python :: 3.14",
   "Topic :: Scientific/Engineering :: Artificial Intelligence",
   "Topic :: Software Development",
@@ -120,7 +119,7 @@ docstring-style = "google"
 [tool.pyright]
 venvPath = "."
 venv = ".venv"
-pythonVersion = "3.13"
+pythonVersion = "3.14"
 pythonPlatform = "All"
 typeCheckingMode = "basic"
 deprecateTypingAliases = true
@@ -148,7 +147,7 @@ asyncio_mode = "auto"
 line-length = 100
 extend-exclude = ["docs", "src/tokonomics/model_names"]
 force-exclude = true  # Also for files named on the command line (pre-commit hooks)
-target-version = "py313"
+target-version = "py314"
 
 [tool.ruff.lint]
 future-annotations = true
@@ -290,7 +289,7 @@ max-complexity = 15
 preview = true
 
 [tool.ty.environment]
-python-version = "3.13"
+python-version = "3.14"
 python-platform = "all"
 
 [tool.ty.src]
