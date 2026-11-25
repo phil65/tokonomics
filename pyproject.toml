@@ -52,6 +52,12 @@ Documentation = "https://phil65.github.io/tokonomics/"
 Homepage = "https://github.com/phil65/tokonomics"
 Issues = "https://github.com/phil65/tokonomics/issues"
 Source = "https://github.com/phil65/tokonomics"
+"Spec: Gemini models" = "https://ai.google.dev/api/models"
+"Spec: LiteLLM prices" = "https://github.com/BerriAI/litellm/blob/main/model_prices_and_context_window.json"
+"Spec: Ollama API" = "https://docs.ollama.com/api/tags"
+"Spec: OpenAI models list" = "https://platform.openai.com/docs/api-reference/models/list"
+"Spec: models.dev" = "https://github.com/anomalyco/models.dev"
+"Spec: xAI API" = "https://docs.x.ai/docs/api-reference"
 
 [project.optional-dependencies]
 tiktoken = ["tiktoken"]

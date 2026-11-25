@@ -81,6 +81,19 @@ Python 3.13/3.14 x Linux/macOS/Windows (3.14 is `continue-on-error`).
 - Prices: LiteLLM data is per token; `ModelPricing` in model discovery is also per token.
 - pytest runs with `asyncio_mode = "auto"`; async tests need no decorator.
 
+## Specs
+
+Data sources and model-list endpoints. All track latest (no versioned schema upstream).
+
+| Spec | URL | Targets | Code | Update check |
+|---|---|---|---|---|
+| LiteLLM model prices and context windows (JSON) | https://github.com/BerriAI/litellm/blob/main/model_prices_and_context_window.json | unpinned (tracks `main`; `LITELLM_PRICES_URL` in `src/tokonomics/core.py`) | `src/tokonomics/core.py`, `src/tokonomics/data_models.py`, `src/tokonomics/registry.py` | same URL (file history) |
+| models.dev catalog (`/api.json`) | https://github.com/anomalyco/models.dev | unpinned (tracks latest) | `src/tokonomics/model_discovery/modelsdev_provider/` | same URL |
+| OpenAI-compatible `GET /models` (OpenRouter, Groq, Mistral, DeepSeek, Requesty, Comet, Novita, Vercel AI Gateway, GitHub, Copilot) | https://platform.openai.com/docs/api-reference/models/list | unpinned (each provider's `/v1` base URL in its `provider.py`) | `src/tokonomics/model_discovery/base.py`, `src/tokonomics/model_discovery/*_provider/` | provider docs, e.g. https://openrouter.ai/docs/api-reference/models/get-models |
+| Gemini API `models.list` | https://ai.google.dev/api/models | API v1beta (`https://generativelanguage.googleapis.com/v1beta`) | `src/tokonomics/model_discovery/gemini_provider/` | same URL |
+| xAI language models | https://docs.x.ai/docs/api-reference | API v1 (`https://api.x.ai/v1/language-models`) | `src/tokonomics/model_discovery/xai_provider/` | same URL |
+| Ollama `/api/tags`, `/api/show` | https://docs.ollama.com/api/tags | unpinned (tracks latest) | `src/tokonomics/model_discovery/ollama_provider/` | https://github.com/ollama/ollama/releases |
+
 ## Pitfalls
 
 - Copier-managed: `.copier-answers.yml`, workflows, `.pre-commit-config.yaml`, `duties.py`
