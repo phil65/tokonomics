@@ -98,9 +98,11 @@ async def test_modelsdev_provider_specific():
     # Validate rich data structure
     openai_models = [m for m in models if m.provider == "openai"]
     if openai_models:
-        sample = openai_models[0]
-        # Should have pricing information
-        assert sample.pricing is not None
+        # Should have pricing information (models.dev lists some models, e.g. image
+        # models, without a cost entry, so don't just take the first one)
+        priced = [m for m in openai_models if m.pricing is not None]
+        assert priced
+        sample = priced[0]
         # Should have context window
         assert sample.context_window is not None
         # Should have metadata
