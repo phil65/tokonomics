@@ -8,7 +8,6 @@ from __future__ import annotations
 
 
 from .anthropic import AnthropicModelId, AnthropicModelName
-from .anthropic_max import AnthropicMaxModelId, AnthropicMaxModelName
 from .cerebras import CerebrasModelId, CerebrasModelName
 from .cohere import CohereModelId, CohereModelName
 from .comet import CometModelId, CometModelName
@@ -33,7 +32,6 @@ from .modelsdev import ModelsDevModelId, ModelsDevModelName
 # Total: 1573, Unique: 1573
 ModelId = (
     AnthropicModelId
-    | AnthropicMaxModelId
     | CerebrasModelId
     | CohereModelId
     | CometModelId
@@ -56,7 +54,6 @@ ModelId = (
 # Total: 1573, Unique: 1357 (duplicates exist across providers)
 ModelName = (
     AnthropicModelName
-    | AnthropicMaxModelName
     | CerebrasModelName
     | CohereModelName
     | CometModelName
@@ -76,8 +73,6 @@ ModelName = (
 )
 
 __all__ = [
-    "AnthropicMaxModelId",
-    "AnthropicMaxModelName",
     "AnthropicModelId",
     "AnthropicModelName",
     "CerebrasModelId",
