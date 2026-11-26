@@ -72,7 +72,7 @@ async def test_provider_uses_endpoint_from_token_response(monkeypatch: pytest.Mo
     urls: list[str] = []
 
     class FakeResponse:
-        async def json(self) -> dict[str, Any]:
+        def json(self) -> dict[str, Any]:
             return {"data": []}
 
     async def fake_get(url: str, **kwargs: Any) -> FakeResponse:

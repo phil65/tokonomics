@@ -37,10 +37,12 @@ def _fresh_cache() -> Iterator[None]:
 
 
 class _Resp:
+    """Like anyenv 3's HttpResponse: the body is read, json() is sync."""
+
     def __init__(self, data: Any) -> None:
         self._data = data
 
-    async def json(self) -> Any:
+    def json(self) -> Any:
         return self._data
 
 

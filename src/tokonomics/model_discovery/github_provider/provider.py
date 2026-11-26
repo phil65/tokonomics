@@ -83,7 +83,7 @@ class GitHubProvider(ModelProvider):
                 cache=True,
                 cache_ttl=MODELS_CACHE_TTL,
             )
-            data = await response.json()
+            data = response.json()
             if not isinstance(data, dict) or "summaries" not in data:
                 msg = "Invalid response format from GitHub Models API"
                 raise RuntimeError(msg)  # noqa: TRY301
@@ -154,9 +154,13 @@ class GitHubProvider(ModelProvider):
 
     async def get_models(self) -> list[ModelInfo]:
         """Get both free and paid models through separate API calls."""
-        free_models, paid_models = await asyncio.gather(
-            self._fetch_models(is_free=True), self._fetch_models(is_free=False)
-        )
+        import anyenv
+
+        # One client for both requests (the helpers inside pick the session up).
+        async with anyenv.http_session(cache=True, cache_ttl=MODELS_CACHE_TTL):
+            free_models, paid_models = await asyncio.gather(
+                self._fetch_models(is_free=True), self._fetch_models(is_free=False)
+            )
         return free_models + paid_models
 
 

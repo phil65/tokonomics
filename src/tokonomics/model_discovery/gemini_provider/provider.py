@@ -92,47 +92,50 @@ class GeminiProvider(ModelProvider):
 
     async def get_models(self) -> list[ModelInfo]:
         """Override the base method to handle Gemini's unique API structure."""
+        import anyenv
         from anyenv import HttpError, get_json
 
         url = f"{self.base_url}/models"
 
         try:
-            data = await get_json(
-                url,
-                headers=self.headers,
-                params=self.params,
-                cache=True,
-                cache_ttl=MODELS_CACHE_TTL,
-                return_type=dict,
-            )
-
-            if "models" not in data:
-                msg = "Invalid response format from Gemini API"
-                raise RuntimeError(msg)
-
-            # Get all pages if nextPageToken is present
-            models = data["models"]
-            next_page_token = data.get("nextPageToken")
-
-            while next_page_token:
-                page_params = self.params.copy()
-                page_params["pageToken"] = next_page_token
-
-                next_data = await get_json(
+            # One connection for all pages.
+            async with anyenv.http_session(cache=True, cache_ttl=MODELS_CACHE_TTL):
+                data = await get_json(
                     url,
                     headers=self.headers,
-                    params=page_params,
+                    params=self.params,
                     cache=True,
                     cache_ttl=MODELS_CACHE_TTL,
                     return_type=dict,
                 )
 
-                if "models" in next_data:
-                    models.extend(next_data["models"])
+                if "models" not in data:
+                    msg = "Invalid response format from Gemini API"
+                    raise RuntimeError(msg)
 
-                next_page_token = next_data.get("nextPageToken")
+                # Get all pages if nextPageToken is present
+                models = data["models"]
+                next_page_token = data.get("nextPageToken")
 
-            return [self._parse_model(item) for item in models]
+                while next_page_token:
+                    page_params = self.params.copy()
+                    page_params["pageToken"] = next_page_token
+
+                    next_data = await get_json(
+                        url,
+                        headers=self.headers,
+                        params=page_params,
+                        cache=True,
+                        cache_ttl=MODELS_CACHE_TTL,
+                        return_type=dict,
+                    )
+
+                    if "models" in next_data:
+                        models.extend(next_data["models"])
+
+                    next_page_token = next_data.get("nextPageToken")
+
+                return [self._parse_model(item) for item in models]
 
         except HttpError as e:
             msg = f"Failed to fetch models from Gemini: {e}"

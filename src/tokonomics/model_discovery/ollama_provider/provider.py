@@ -48,6 +48,7 @@ class OllamaProvider(ModelProvider):
 
     async def get_models(self) -> list[ModelInfo]:
         """Fetch available models from Ollama using the /api/tags endpoint."""
+        import anyenv
         from anyenv import HttpError, get_json
 
         try:
@@ -64,7 +65,9 @@ class OllamaProvider(ModelProvider):
                 msg = f"Invalid response format from {self.__class__.__name__}"
                 raise RuntimeError(msg)
 
-            models = list(await asyncio.gather(*(self._fetch_model(i) for i in data["models"])))
+            # One client for all /api/show requests (cached, as _fetch_model asks).
+            async with anyenv.http_session(cache=True, cache_ttl=MODELS_CACHE_TTL):
+                models = list(await asyncio.gather(*(self._fetch_model(i) for i in data["models"])))
         except HttpError as e:
             msg = f"Failed to fetch models from {self.__class__.__name__}: {e}"
             raise RuntimeError(msg) from e

@@ -117,7 +117,7 @@ class CopilotProvider(ModelProvider):
             self.base_url = self._token_manager._api_endpoint
             url = f"{self.base_url}/models"
             response = await anyenv.get(url, headers=headers, timeout=30)
-            data = await response.json()
+            data = response.json()
             if not isinstance(data, dict) or "data" not in data:
                 msg = f"Invalid response format from Copilot API: {data}"
                 raise RuntimeError(msg)  # noqa: TRY301
