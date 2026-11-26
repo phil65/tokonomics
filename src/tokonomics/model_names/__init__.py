@@ -72,7 +72,14 @@ ModelName = (
     | ZaiModelName
 )
 
+# The anthropic-max provider is gone (1165263), but released agentpool versions still
+# import these names: keep them, as plain strings, so `import agentpool` works.
+AnthropicMaxModelId = str
+AnthropicMaxModelName = str
+
 __all__ = [
+    "AnthropicMaxModelId",
+    "AnthropicMaxModelName",
     "AnthropicModelId",
     "AnthropicModelName",
     "CerebrasModelId",
