@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 from tokonomics.core import get_model_capabilities
 
 

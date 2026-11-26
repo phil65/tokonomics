@@ -1,7 +1,5 @@
 """xAI's language-models prices are USD cents per 100M tokens."""
 
-from __future__ import annotations
-
 import pytest
 
 from tokonomics.model_discovery.xai_provider.provider import XAIProvider

@@ -1,6 +1,3 @@
-from __future__ import annotations
-
-
 ARTIFICIAL_ANALYSIS = {
     "o1": 90.0,
     "o3-mini": 89.0,

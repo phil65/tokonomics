@@ -1,7 +1,5 @@
 """Token counting utilities with multiple fallback strategies."""
 
-from __future__ import annotations
-
 from functools import lru_cache
 from importlib.util import find_spec
 from typing import TYPE_CHECKING, Any

@@ -1,7 +1,5 @@
 """Script to fetch models from all providers and generate separate files per provider."""
 
-from __future__ import annotations
-
 from collections import defaultdict
 from datetime import timedelta
 import logging

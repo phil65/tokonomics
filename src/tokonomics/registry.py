@@ -1,7 +1,5 @@
 """Modern Pydantic models for LLM pricing configuration using discriminated unions."""
 
-from __future__ import annotations
-
 import json
 import pathlib
 from typing import TYPE_CHECKING, Any

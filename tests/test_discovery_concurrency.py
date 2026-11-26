@@ -1,7 +1,5 @@
 """Discovery fetches run concurrently, don't block the loop and are fetched once."""
 
-from __future__ import annotations
-
 import asyncio
 import sys
 import time

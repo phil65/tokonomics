@@ -1,7 +1,5 @@
 """Tests for the LiteLLM price table: cached-input pricing, caching, single flight."""
 
-from __future__ import annotations
-
 import asyncio
 from dataclasses import dataclass
 from decimal import Decimal

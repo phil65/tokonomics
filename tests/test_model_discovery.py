@@ -1,7 +1,5 @@
 """Test suite for model discovery providers."""
 
-from __future__ import annotations
-
 from typing import TYPE_CHECKING
 
 import pytest

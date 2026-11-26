@@ -1,7 +1,5 @@
 """Tests for core functionality."""
 
-from __future__ import annotations
-
 from decimal import Decimal
 from unittest.mock import AsyncMock, patch
 

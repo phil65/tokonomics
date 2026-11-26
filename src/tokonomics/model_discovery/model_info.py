@@ -1,7 +1,5 @@
 """Model discovery and information retrieval."""
 
-from __future__ import annotations
-
 from dataclasses import dataclass, field
 from datetime import datetime  # noqa: TC003
 from typing import Any, Literal

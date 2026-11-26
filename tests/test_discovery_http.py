@@ -1,7 +1,5 @@
 """Model discovery against a local server: anyenv 3 responses, one connection per provider."""
 
-from __future__ import annotations
-
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 import json
 import threading

@@ -1,7 +1,5 @@
 """Models.dev provider - unified model discovery from models.dev API."""
 
-from __future__ import annotations
-
 import asyncio
 import contextlib
 from datetime import datetime

@@ -1,7 +1,5 @@
 """Test suite for tokonomics core functionality."""
 
-from __future__ import annotations
-
 from decimal import Decimal
 
 import httpx2

@@ -1,7 +1,5 @@
 """Integration with pydantic-ai cost calculations."""
 
-from __future__ import annotations
-
 import logging
 from typing import TYPE_CHECKING, Protocol, overload, runtime_checkable
 

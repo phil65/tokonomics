@@ -1,7 +1,5 @@
 """Tests for the Copilot token manager."""
 
-from __future__ import annotations
-
 import asyncio
 import threading
 import time

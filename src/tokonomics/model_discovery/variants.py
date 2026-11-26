@@ -9,8 +9,6 @@ Pydantic-ai uses provider-prefixed settings names:
 - Google: `google_thinking_config`
 """
 
-from __future__ import annotations
-
 from typing import Any, Literal
 
 

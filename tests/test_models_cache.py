@@ -1,7 +1,5 @@
 """Discovery parses a provider's model list once per MODELS_CACHE_TTL."""
 
-from __future__ import annotations
-
 from datetime import datetime, timedelta
 from typing import TYPE_CHECKING
 

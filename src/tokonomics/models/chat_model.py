@@ -1,7 +1,5 @@
 """Clean API models for chat completion models."""
 
-from __future__ import annotations
-
 from decimal import Decimal
 from typing import TYPE_CHECKING
 

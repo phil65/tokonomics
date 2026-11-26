@@ -1,7 +1,5 @@
 """Cerebras provider."""
 
-from __future__ import annotations
-
 import contextlib
 from datetime import datetime
 import logging

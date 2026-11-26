@@ -1,7 +1,5 @@
 """GitHub Copilot provider for model discovery."""
 
-from __future__ import annotations
-
 import asyncio
 from datetime import datetime, timedelta
 import logging
