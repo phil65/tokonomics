@@ -23,7 +23,7 @@ from tokonomics.core import (
     get_available_models,
     reset_cache,
 )
-from tokonomics.toko_types import ModelCosts, TokenCosts
+from tokonomics.toko_types import ModelCosts, ModelCostTier, TokenCosts
 from tokonomics.pydanticai_cost import calculate_pydantic_cost, Usage
 from tokonomics.model_discovery import (
     AnthropicProvider,
@@ -46,6 +46,7 @@ __all__ = [
     "CopilotTokenManager",
     "GroqProvider",
     "MistralProvider",
+    "ModelCostTier",
     "ModelCosts",
     "ModelInfo",
     "ModelName",

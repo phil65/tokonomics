@@ -2,29 +2,52 @@
 
 from __future__ import annotations
 
+import asyncio
+from dataclasses import dataclass
 from decimal import Decimal
 import os
-import pathlib
+import re
+import threading
+import time
 from typing import Any, cast
+import weakref
 
 from anyenv import get_json
-from platformdirs import user_data_dir
 
 from tokonomics import log
 from tokonomics.helpers import _is_numeric, _safe_numeric_convert
-from tokonomics.toko_types import ModelCapabilities, ModelCosts, TokenCosts
+from tokonomics.toko_types import ModelCapabilities, ModelCosts, ModelCostTier, TokenCosts
 
 
 logger = log.get_logger(__name__)
 
 
-# Cache cost data persistently
-PRICING_DIR = pathlib.Path(user_data_dir("tokonomics", "tokonomics")) / "pricing"
-PRICING_DIR.mkdir(parents=True, exist_ok=True)
-_cost_cache: dict[str, object] = {}
-
-# Cache timeout in seconds (24 hours)
 _CACHE_TIMEOUT = 86400
+"""Seconds the price table is kept (in process and in the HTTP cache): 24 hours."""
+
+LITELLM_PRICES_URL = "https://raw.githubusercontent.com/BerriAI/litellm/refs/heads/main/model_prices_and_context_window.json"
+
+# Tier keys like "input_cost_per_token_above_200k_tokens" (not the _priority/_flex variants).
+_TIER_RE = re.compile(
+    r"^(input_cost_per_token|output_cost_per_token|cache_read_input_token_cost"
+    r"|cache_creation_input_token_cost)_above_(\d+)k_tokens$"
+)
+
+
+@dataclass(slots=True)
+class _PriceTable:
+    loaded_at: float
+    """``_now()`` (monotonic clock) of the download."""
+    models: dict[str, dict[str, Any]]
+    """Lower-cased model name -> LiteLLM entry."""
+
+
+_now = time.monotonic
+_table: _PriceTable | None = None
+_inflight: weakref.WeakKeyDictionary[asyncio.AbstractEventLoop, asyncio.Task[_PriceTable]] = (
+    weakref.WeakKeyDictionary()
+)
+_lock = threading.Lock()  # guards _table / _inflight (free-threading, several loops)
 
 
 def _is_testing() -> bool:
@@ -32,43 +55,95 @@ def _is_testing() -> bool:
     return bool(os.getenv("PYTEST_CURRENT_TEST"))
 
 
-LITELLM_PRICES_URL = "https://raw.githubusercontent.com/BerriAI/litellm/refs/heads/main/model_prices_and_context_window.json"
-
-
 def reset_cache() -> None:
     """Clear all cached pricing and limit data."""
-    _cost_cache.clear()
+    global _table
+    with _lock:
+        _table = None
 
 
-def _find_litellm_model_name(model: str) -> str | None:
-    """Find matching model name in LiteLLM pricing data.
+async def _download_table(cache_timeout: int) -> _PriceTable:
+    logger.debug("Downloading pricing data from LiteLLM...")
+    data = await get_json(
+        LITELLM_PRICES_URL,
+        cache=not _is_testing(),
+        cache_ttl=cache_timeout,
+        return_type=dict,
+    )
+    if not isinstance(data, dict):
+        msg = f"Expected dict, got {type(data)}"
+        raise TypeError(msg)
+    models = {name.lower(): info for name, info in data.items() if isinstance(info, dict)}
+    logger.debug("Loaded LiteLLM data for %d models", len(models))
+    return _PriceTable(loaded_at=_now(), models=models)
 
-    Attempts to match the input model name against cached LiteLLM pricing data
-    by trying different formats (direct match, base name, provider format).
 
-    Args:
-        model: Input model name (e.g. "openai:gpt-4", "gpt-4")
+async def _get_table(cache_timeout: int) -> _PriceTable:
+    """Return the LiteLLM table, downloading it once per ``cache_timeout``.
 
-    Returns:
-        str | None: Matching LiteLLM model name if found in cache, None otherwise
+    Concurrent callers on one loop share a single download. If a refresh fails while an
+    older table exists, the old one is kept (and retried on the next call).
     """
-    logger.debug("Looking up model costs for: %s", model)
-    model = model.lower()
-    if model in _cost_cache:
-        logger.debug("Found direct cache match for: %r", model)
-        return model
+    global _table
+    table = _table
+    if table is not None and _now() - table.loaded_at < cache_timeout:
+        return table
+    loop = asyncio.get_running_loop()
+    with _lock:
+        task = _inflight.get(loop)
+        if task is None:
+            task = _inflight[loop] = loop.create_task(_download_table(cache_timeout))
+            task.add_done_callback(lambda _: _inflight.pop(loop, None))
+    try:
+        new_table = await asyncio.shield(task)
+    except Exception:
+        if table is None:
+            raise
+        logger.warning("Refreshing LiteLLM prices failed, keeping the old table", exc_info=True)
+        return table
+    with _lock:
+        _table = new_table
+    return new_table
 
-    if ":" in model:  # For provider:model format, try both variants
-        provider, model_name = model.split(":", 1)
-        if _cost_cache.get(model_name) is not None:
-            logger.debug("Found cache match for base name: %r", model_name)
-            return model_name
-        # Try provider/model  (normalized)
-        if _cost_cache.get(key := f"{provider.lower()}/{model_name}") is not None:
-            logger.debug("Found cache match for provider format: %r", key)
-            return key
-    logger.debug("No cache match found for: %r", model)
+
+def _name_candidates(model: str) -> list[str]:
+    """Names to try for ``model``: as is, without ``provider:``, as ``provider/model``."""
+    name = model.lower()
+    if ":" not in name:
+        return [name]
+    provider, model_name = name.split(":", 1)
+    return [name, model_name, f"{provider}/{model_name}"]
+
+
+def _find_entry(table: _PriceTable, model: str) -> dict[str, Any] | None:
+    for name in _name_candidates(model):
+        if (info := table.models.get(name)) is not None:
+            return info
     return None
+
+
+def _decimal(value: Any) -> Decimal | None:
+    return Decimal(str(value)) if _is_numeric(value) else None
+
+
+def _parse_costs(info: dict[str, Any]) -> ModelCosts | None:
+    input_cost = _decimal(info.get("input_cost_per_token"))
+    output_cost = _decimal(info.get("output_cost_per_token"))
+    if input_cost is None or output_cost is None:
+        return None
+    costs = ModelCosts(input_cost_per_token=input_cost, output_cost_per_token=output_cost)
+    if (read := _decimal(info.get("cache_read_input_token_cost"))) is not None:
+        costs["cache_read_input_token_cost"] = read
+    if (write := _decimal(info.get("cache_creation_input_token_cost"))) is not None:
+        costs["cache_creation_input_token_cost"] = write
+    tiers: dict[int, ModelCostTier] = {}
+    for key, value in info.items():
+        if (match := _TIER_RE.match(key)) and (price := _decimal(value)) is not None:
+            tier = tiers.setdefault(int(match[2]) * 1000, ModelCostTier())
+            cast("dict[str, Decimal]", tier)[match[1]] = price
+    if tiers:
+        costs["tiers"] = dict(sorted(tiers.items()))
+    return costs
 
 
 async def get_model_costs(
@@ -78,8 +153,8 @@ async def get_model_costs(
 ) -> ModelCosts | None:
     """Get cost information for a model from LiteLLM pricing data.
 
-    Attempts to find model costs in cache first. If not found, downloads fresh
-    pricing data from LiteLLM's GitHub repository and updates the cache.
+    The LiteLLM table is downloaded once and kept for ``cache_timeout`` seconds; lookups
+    of unknown models don't download it again.
 
     Args:
         model: Name of the model to look up costs for
@@ -88,72 +163,32 @@ async def get_model_costs(
     Returns:
         ModelCosts | None: Model's cost information if found, None otherwise
     """
-    normalized_model = model.lower()
-    cache_key = f"{normalized_model}_costs"
-    cached_costs = cast(ModelCosts | None, _cost_cache.get(cache_key))
-    if cached_costs is not None:
-        return cached_costs
-
     try:
-        logger.debug("Downloading pricing data from LiteLLM...")
-        data: dict[str, Any] = await get_json(
-            LITELLM_PRICES_URL,
-            cache=not _is_testing(),
-            cache_ttl=cache_timeout,
-            return_type=dict,
-        )
-        assert isinstance(data, dict), f"Expected dict, got {type(data)}"
-        logger.debug("Successfully downloaded pricing data.")
-
-        all_costs: dict[str, ModelCosts] = {}
-        for name, info in data.items():
-            if not isinstance(info, dict):  # Skip sample_spec
-                continue
-
-            # Get cost values safely
-            input_cost = info.get("input_cost_per_token")
-            output_cost = info.get("output_cost_per_token")
-
-            # Skip if values are missing
-            if input_cost is None or output_cost is None:
-                continue
-
-            # Skip if values aren't numeric
-            if not (_is_numeric(input_cost) and _is_numeric(output_cost)):
-                continue
-
-            # Store with normalized case
-            all_costs[name.lower()] = ModelCosts(
-                input_cost_per_token=Decimal(str(input_cost)),
-                output_cost_per_token=Decimal(str(output_cost)),
-            )
-
-        logger.debug("Extracted costs for %d models", len(all_costs))
-
-        # Update cache with all costs
-        for model_name, cost_info in all_costs.items():
-            cost_cache_key = f"{model_name}_costs"
-            _cost_cache[cost_cache_key] = cost_info
-        logger.debug("Updated cache with new pricing data")
-
-        # Try finding model with different formats
-        result = all_costs.get(normalized_model)
-        if result is None and ":" in normalized_model:
-            provider, model_name = normalized_model.split(":", 1)
-            # Try base model name
-            result = all_costs.get(model_name)
-            if result is None:
-                provider_format = f"{provider}/{model_name}"
-                result = all_costs.get(provider_format)
-
-        # Cache the result for this specific model name
-        if result is not None:
-            _cost_cache[cache_key] = result
+        table = await _get_table(cache_timeout)
     except Exception as e:  # noqa: BLE001
         logger.debug("Failed to get model costs for %r: %s", model, e)
         return None
-    else:
-        return result
+    info = _find_entry(table, model)
+    return _parse_costs(info) if info is not None else None
+
+
+def _tier_prices(costs: ModelCosts, prompt_tokens: int) -> ModelCostTier:
+    """Prices for a request with ``prompt_tokens`` input tokens.
+
+    Like LiteLLM, a request above a tier's threshold is billed at that tier's prices
+    for all its tokens; prices a tier doesn't list fall back to the base prices.
+    """
+    prices = ModelCostTier(
+        input_cost_per_token=costs["input_cost_per_token"],
+        output_cost_per_token=costs["output_cost_per_token"],
+    )
+    for key in ("cache_read_input_token_cost", "cache_creation_input_token_cost"):
+        if key in costs:
+            prices[key] = costs[key]
+    for threshold, tier in costs.get("tiers", {}).items():
+        if prompt_tokens > threshold:
+            prices.update(tier)
+    return prices
 
 
 async def calculate_token_cost(
@@ -161,34 +196,49 @@ async def calculate_token_cost(
     input_tokens: int | None,
     output_tokens: int | None,
     *,
+    cache_read_tokens: int | None = None,
+    cache_write_tokens: int | None = None,
     cache_timeout: int = _CACHE_TIMEOUT,
 ) -> TokenCosts | None:
     """Calculate detailed costs for token usage based on model pricing.
 
     Combines input and output token counts with their respective costs to
-    calculate the breakdown of costs. If either token count is None, it will
+    calculate the breakdown of costs. If a token count is None, it will
     be treated as 0 tokens.
 
     Args:
         model: Name of the model used (e.g. "gpt-4", "openai:gpt-3.5-turbo")
-        input_tokens: Number of tokens in the prompt/input, or None
+        input_tokens: Number of tokens in the prompt/input, or None. Includes the
+            cache read and cache write tokens (as pydantic-ai counts them).
         output_tokens: Number of tokens in the completion/output, or None
+        cache_read_tokens: Input tokens read from the prompt cache, billed at the
+            model's cache read price (the input price if it has none)
+        cache_write_tokens: Input tokens written to the prompt cache, billed at the
+            model's cache creation price (the input price if it has none)
         cache_timeout: Number of seconds to keep prices in cache (default: 24 hours)
 
     Returns:
-        TokenCosts | None: Detailed cost breakdown if pricing data available
+        TokenCosts | None: Detailed cost breakdown if pricing data available.
+            ``input_cost`` includes the cache read and write costs.
     """
     costs = await get_model_costs(model, cache_timeout=cache_timeout)
     if not costs:
         logger.debug("No costs found for model %r", model)
         return None
 
-    # Convert None values to 0
     input_count = input_tokens or 0
     output_count = output_tokens or 0
-
-    input_cost = input_count * costs["input_cost_per_token"]
-    output_cost = output_count * costs["output_cost_per_token"]
+    read_count = cache_read_tokens or 0
+    write_count = cache_write_tokens or 0
+    prices = _tier_prices(costs, input_count)
+    input_price = prices["input_cost_per_token"]
+    uncached = max(input_count - read_count - write_count, 0)
+    input_cost = (
+        uncached * input_price
+        + read_count * prices.get("cache_read_input_token_cost", input_price)
+        + write_count * prices.get("cache_creation_input_token_cost", input_price)
+    )
+    output_cost = output_count * prices["output_cost_per_token"]
 
     token_costs = TokenCosts(input_cost=input_cost, output_cost=output_cost)
 
@@ -213,34 +263,44 @@ async def get_available_models(
     Returns:
         list[str]: List of available model names, sorted alphabetically
     """
-    cache_key = "available_models"
-
-    cached_models = cast(list[str] | None, _cost_cache.get(cache_key))
-    if cached_models is not None:
-        return cached_models
-
     try:
-        logger.debug("Downloading model data from LiteLLM...")
-        data: dict[str, Any] = await get_json(
-            LITELLM_PRICES_URL,
-            cache=not _is_testing(),
-            cache_ttl=cache_timeout,
-            return_type=dict,
-        )
-        assert isinstance(data, dict), f"Expected dict, got {type(data)}"
-        # Filter out non-dictionary entries (like sample_spec) and collect model names
-        model_names = sorted(name.lower() for name, info in data.items() if isinstance(info, dict))
-
-        logger.debug("Found %d available models", len(model_names))
-
-        # Cache the results
-        _cost_cache[cache_key] = model_names
+        table = await _get_table(cache_timeout)
     except Exception as e:
         error_msg = "Failed to get available models"
         logger.exception(error_msg)
         raise ValueError(error_msg) from e
-    else:
-        return model_names
+    return sorted(table.models)
+
+
+def _parse_capabilities(info: dict[str, Any]) -> ModelCapabilities:
+    # LiteLLM dropped the legacy "max_tokens" field (it mirrored the output limit).
+    max_tokens_raw = info.get("max_tokens", info.get("max_output_tokens", 0))
+    max_input_raw = info.get("max_input_tokens", max_tokens_raw)
+    max_output_raw = info.get("max_output_tokens", max_tokens_raw)
+
+    # Convert token values to integers, defaulting to 0
+    try:
+        max_tokens = int(_safe_numeric_convert(max_tokens_raw))
+        max_input = int(_safe_numeric_convert(max_input_raw))
+        max_output = int(_safe_numeric_convert(max_output_raw))
+    except ValueError, TypeError:
+        max_tokens = max_input = max_output = 0
+
+    return ModelCapabilities(
+        max_tokens=max_tokens,
+        max_input_tokens=max_input,
+        max_output_tokens=max_output,
+        litellm_provider=info.get("litellm_provider"),
+        mode=info.get("mode"),
+        supports_function_calling=bool(info.get("supports_function_calling")),
+        supports_parallel_function_calling=bool(info.get("supports_parallel_function_calling")),
+        supports_vision=bool(info.get("supports_vision")),
+        supports_audio_input=bool(info.get("supports_audio_input")),
+        supports_audio_output=bool(info.get("supports_audio_output")),
+        supports_prompt_caching=bool(info.get("supports_prompt_caching")),
+        supports_response_schema=bool(info.get("supports_response_schema")),
+        supports_system_messages=bool(info.get("supports_system_messages")),
+    )
 
 
 async def get_model_capabilities(
@@ -260,91 +320,14 @@ async def get_model_capabilities(
     Raises:
         ValueError: If there's an error fetching the capabilities data
     """
-    normalized_model = model.lower()
-    cache_key = f"{normalized_model}_capabilities"
-
-    cached_capabilities = cast(ModelCapabilities | None, _cost_cache.get(cache_key))
-    if cached_capabilities is not None:
-        return cached_capabilities
-
     try:
-        logger.debug("Downloading model data from LiteLLM...")
-        data: dict[str, Any] = await get_json(
-            LITELLM_PRICES_URL,
-            cache=not _is_testing(),
-            cache_ttl=cache_timeout,
-            return_type=dict,
-        )
-        assert isinstance(data, dict), f"Expected dict, got {type(data)}"
-        logger.debug("Successfully downloaded model data")
-
-        all_capabilities: dict[str, ModelCapabilities] = {}
-        for name, info in data.items():
-            if not isinstance(info, dict):
-                continue
-
-            # Handle token limits with defaults
-            # LiteLLM dropped the legacy "max_tokens" field (it mirrored the output limit).
-            max_tokens_raw = info.get("max_tokens", info.get("max_output_tokens", 0))
-            max_input_raw = info.get("max_input_tokens", max_tokens_raw)
-            max_output_raw = info.get("max_output_tokens", max_tokens_raw)
-
-            # Convert token values to integers, defaulting to 0
-            try:
-                max_tokens = int(_safe_numeric_convert(max_tokens_raw))
-                max_input = int(_safe_numeric_convert(max_input_raw))
-                max_output = int(_safe_numeric_convert(max_output_raw))
-            except ValueError, TypeError:
-                max_tokens = max_input = max_output = 0
-
-            capabilities = ModelCapabilities(
-                max_tokens=max_tokens,
-                max_input_tokens=max_input,
-                max_output_tokens=max_output,
-                litellm_provider=info.get("litellm_provider"),
-                mode=info.get("mode"),
-                supports_function_calling=bool(info.get("supports_function_calling")),
-                supports_parallel_function_calling=bool(
-                    info.get("supports_parallel_function_calling")
-                ),
-                supports_vision=bool(info.get("supports_vision")),
-                supports_audio_input=bool(info.get("supports_audio_input")),
-                supports_audio_output=bool(info.get("supports_audio_output")),
-                supports_prompt_caching=bool(info.get("supports_prompt_caching")),
-                supports_response_schema=bool(info.get("supports_response_schema")),
-                supports_system_messages=bool(info.get("supports_system_messages")),
-            )
-            all_capabilities[name.lower()] = capabilities
-
-        logger.debug("Extracted capabilities for %d models", len(all_capabilities))
-
-        # Update cache with all capabilities
-        for model_name, model_capabilities in all_capabilities.items():
-            cap_cache_key = f"{model_name}_capabilities"
-            _cost_cache[cap_cache_key] = model_capabilities
-        logger.debug("Updated cache with new capabilities data")
-
-        # Try finding model with different formats
-        result = all_capabilities.get(normalized_model)
-        if result is None and ":" in normalized_model:
-            provider, model_name = normalized_model.split(":", 1)
-            # Try base model name
-            result = all_capabilities.get(model_name)
-            if result is None:
-                # Try provider/model format
-                provider_format = f"{provider}/{model_name}"
-                result = all_capabilities.get(provider_format)
-
-        if result is not None:
-            _cost_cache[cache_key] = result
-            return result
-
+        table = await _get_table(cache_timeout)
     except Exception as e:
         error_msg = f"Failed to get model capabilities for {model}: {e}"
         logger.exception(error_msg)
         raise ValueError(error_msg) from e
-
-    return None
+    info = _find_entry(table, model)
+    return _parse_capabilities(info) if info is not None else None
 
 
 if __name__ == "__main__":

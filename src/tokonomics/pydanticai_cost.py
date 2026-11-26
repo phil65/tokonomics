@@ -72,5 +72,8 @@ async def calculate_pydantic_cost(
         model=model,
         input_tokens=usage.input_tokens,
         output_tokens=usage.output_tokens,
+        # Not part of the Protocol: older pydantic-ai versions and other usage objects.
+        cache_read_tokens=getattr(usage, "cache_read_tokens", 0),
+        cache_write_tokens=getattr(usage, "cache_write_tokens", 0),
         cache_timeout=cache_timeout,
     )

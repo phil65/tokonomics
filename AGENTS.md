@@ -12,9 +12,11 @@ the names exported from `src/tokonomics/__init__.py` as public API and keep them
 
 - `src/tokonomics/core.py`: LiteLLM pricing lookups. `get_model_costs`,
   `calculate_token_cost`, `get_available_models`, `get_model_capabilities`,
-  `reset_cache`. Downloads `LITELLM_PRICES_URL` via `anyenv.get_json` (HTTP cache),
-  plus an in-process dict cache (`_cost_cache`). Model-name matching (case-insensitive,
-  `provider:model`, `provider/model`) lives in `_find_litellm_model_name`.
+  `reset_cache`. Downloads `LITELLM_PRICES_URL` via `anyenv.get_json` (HTTP cache)
+  once per `cache_timeout` into an in-process table (`_get_table`: one download per loop
+  for concurrent callers, the old table kept if a refresh fails). Model-name matching
+  (case-insensitive, `provider:model`, `provider/model`) lives in `_name_candidates`.
+  Costs include cache read/write prices and LiteLLM's `*_above_<N>k_tokens` tiers.
 - `src/tokonomics/toko_types.py`: lightweight result types (`ModelCosts` TypedDict,
   `TokenCosts` and `ModelCapabilities` dataclasses).
 - `src/tokonomics/pydanticai_cost.py`: `calculate_pydantic_cost` plus a `Usage`

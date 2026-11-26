@@ -30,13 +30,9 @@ SAMPLE_PRICING_DATA = {
 @pytest.fixture(autouse=True)
 def setup_teardown():
     """Setup and teardown for each test."""
-    # Clear in-memory cache
-    tokonomics.core._cost_cache.clear()
-
+    tokonomics.core.reset_cache()
     yield
-
-    # Reset after test
-    tokonomics.core._cost_cache.clear()
+    tokonomics.core.reset_cache()
 
 
 @pytest.fixture
@@ -143,10 +139,6 @@ async def test_api_error(mock_litellm_api):
     """Test behavior when API request fails."""
     # Make the pricing endpoint return an error
     mock_litellm_api[core.LITELLM_PRICES_URL] = httpx2.Response(500)
-    # Clear specific cache entries for this test
-    cache_key = "gpt-4_costs"
-    if cache_key in tokonomics.core._cost_cache:
-        del tokonomics.core._cost_cache[cache_key]
     costs = await get_model_costs("gpt-4", cache_timeout=1)
     assert costs is None
 

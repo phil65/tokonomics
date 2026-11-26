@@ -40,7 +40,6 @@ classifiers = [
 dependencies = [
   "anyenv[httpx2]>=2.1.0",
   # Only add below (Copier)
-  "platformdirs>=4.3.6",
   "pydantic",
   "schemez",
 ]

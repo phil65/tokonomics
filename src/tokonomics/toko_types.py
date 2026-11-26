@@ -3,11 +3,20 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, TypedDict
+from typing import TYPE_CHECKING, NotRequired, TypedDict
 
 
 if TYPE_CHECKING:
     from decimal import Decimal
+
+
+class ModelCostTier(TypedDict, total=False):
+    """Prices that apply to a request above a prompt size (LiteLLM's ``*_above_<N>k_tokens``)."""
+
+    input_cost_per_token: Decimal
+    output_cost_per_token: Decimal
+    cache_read_input_token_cost: Decimal
+    cache_creation_input_token_cost: Decimal
 
 
 class ModelCosts(TypedDict):
@@ -15,6 +24,12 @@ class ModelCosts(TypedDict):
 
     input_cost_per_token: Decimal
     output_cost_per_token: Decimal
+    cache_read_input_token_cost: NotRequired[Decimal]
+    """Price of an input token read from the prompt cache."""
+    cache_creation_input_token_cost: NotRequired[Decimal]
+    """Price of an input token written to the prompt cache."""
+    tiers: NotRequired[dict[int, ModelCostTier]]
+    """Prompt-size threshold (tokens) -> prices for requests with more input tokens."""
 
 
 class TokenUsage(TypedDict):
