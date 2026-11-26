@@ -2,11 +2,13 @@
 
 from __future__ import annotations
 
+import asyncio
 from datetime import datetime, timedelta
 import logging
 import os
 import threading
 from typing import Any
+import weakref
 
 
 logger = logging.getLogger(__name__)
@@ -40,17 +42,36 @@ class CopilotTokenManager:
         self._github_oauth_token = os.environ.get("GITHUB_COPILOT_API_KEY")
         self._copilot_token = None
         self._token_expires_at = datetime.now()
+        # Guards the token state and the per-loop locks; never held across an await.
         self._token_lock = threading.Lock()
+        self._async_locks: weakref.WeakKeyDictionary[asyncio.AbstractEventLoop, asyncio.Lock] = (
+            weakref.WeakKeyDictionary()
+        )
         self._api_endpoint = "https://api.githubcopilot.com"
+
+    def _needs_refresh(self) -> bool:
+        return self._copilot_token is None or datetime.now() > self._token_expires_at - DELTA
+
+    def _refresh_lock(self) -> asyncio.Lock:
+        """Return the asyncio lock for the running loop (one per loop, created lazily)."""
+        loop = asyncio.get_running_loop()
+        with self._token_lock:
+            lock = self._async_locks.get(loop)
+            if lock is None:
+                lock = self._async_locks[loop] = asyncio.Lock()
+            return lock
 
     async def get_token(self) -> str:
         """Get a valid Copilot token, refreshing if needed."""
         import anyenv
 
-        with self._token_lock:
-            # If token is missing or expires in less than buffer time, refresh it
-            now = datetime.now()
-            if self._copilot_token is None or now > self._token_expires_at - DELTA:
+        if not self._needs_refresh():
+            assert self._copilot_token
+            return self._copilot_token
+        # An asyncio lock, not the thread lock: holding a threading.Lock across the
+        # await would block the whole event loop when a second coroutine waits on it.
+        async with self._refresh_lock():
+            if self._needs_refresh():
                 if not self._github_oauth_token:
                     msg = "GitHub OAuth token not found in GITHUB_COPILOT_API_KEY env var"
                     raise RuntimeError(msg)
@@ -68,7 +89,8 @@ class CopilotTokenManager:
                         msg = "Failed to obtain GitHub Copilot token"
                         raise RuntimeError(msg) from e
                 else:
-                    self.handle_token_response(data)
+                    with self._token_lock:
+                        self.handle_token_response(data)
             assert self._copilot_token, "Copilot token is missing"
             return self._copilot_token
 
@@ -78,8 +100,7 @@ class CopilotTokenManager:
 
         with self._token_lock:
             # If token is missing or expires in less than buffer time, refresh it
-            now = datetime.now()
-            if self._copilot_token is None or now > self._token_expires_at - DELTA:
+            if self._needs_refresh():
                 if not self._github_oauth_token:
                     msg = "GitHub OAuth token not found in GITHUB_COPILOT_API_KEY env var"
                     raise RuntimeError(msg)
