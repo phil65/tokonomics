@@ -1,11 +1,8 @@
 """Tokonomics types."""
 
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, NotRequired, TypedDict
-
-
-if TYPE_CHECKING:
-    from decimal import Decimal
+from decimal import Decimal  # noqa: TC003  (public TypedDicts / dataclasses: resolvable at runtime)
+from typing import NotRequired, TypedDict
 
 
 class ModelCostTier(TypedDict, total=False):
