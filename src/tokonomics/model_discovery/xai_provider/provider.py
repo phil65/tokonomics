@@ -16,6 +16,10 @@ if TYPE_CHECKING:
     from tokonomics.model_discovery.model_info import Modality
 
 
+_PRICE_SCALE = 10_000_000_000
+"""xAI prices are in USD cents per 100M tokens."""
+
+
 class XAIProvider(ModelProvider):
     """xAI API provider."""
 
@@ -59,7 +63,8 @@ class XAIProvider(ModelProvider):
         if not output_modalities:
             output_modalities = {"text"}
 
-        # Parse pricing (prices appear to be in micro-units, convert to dollars per token)
+        # Token prices are USD cents per 100M tokens (12500 = $1.25/M): / 1e10 for $/token.
+        # The unit of search_price is unverified (0 for all models so far): kept as is.
         pricing = None
         if any(
             key in data
@@ -71,16 +76,16 @@ class XAIProvider(ModelProvider):
             ]
         ):
             pricing = ModelPricing(
-                prompt=data.get("prompt_text_token_price", 0) / 1_000_000
+                prompt=data.get("prompt_text_token_price", 0) / _PRICE_SCALE
                 if "prompt_text_token_price" in data
                 else None,
-                completion=data.get("completion_text_token_price", 0) / 1_000_000
+                completion=data.get("completion_text_token_price", 0) / _PRICE_SCALE
                 if "completion_text_token_price" in data
                 else None,
-                image=data.get("prompt_image_token_price", 0) / 1_000_000
+                image=data.get("prompt_image_token_price", 0) / _PRICE_SCALE
                 if "prompt_image_token_price" in data
                 else None,
-                input_cache_read=data.get("cached_prompt_text_token_price", 0) / 1_000_000
+                input_cache_read=data.get("cached_prompt_text_token_price", 0) / _PRICE_SCALE
                 if "cached_prompt_text_token_price" in data
                 else None,
                 web_search=data.get("search_price", 0) / 1_000_000
