@@ -162,10 +162,14 @@ class ModelsDevProvider(ModelProvider):
         self.provider_filter = provider
 
     def is_available(self) -> bool:
-        """Check whether the provider is available for use."""
-        if self.provider_filter is None or self.provider_filter not in _API_KEY_VARS:
+        """Whether the models can be used: the whole catalog always, a provider with its key.
+
+        A provider filter without a known key variable counts as unavailable.
+        """
+        if self.provider_filter is None:
             return True
-        return any(os.environ.get(var) for var in _API_KEY_VARS[self.provider_filter])
+        env_vars = _API_KEY_VARS.get(self.provider_filter, ())
+        return any(os.environ.get(var) for var in env_vars)
 
     def _parse_model(self, data: dict[str, Any]) -> ModelInfo:
         """Parse models.dev API response into ModelInfo."""

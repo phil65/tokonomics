@@ -202,3 +202,9 @@ def test_transformers_tokenizer_loaded_once(monkeypatch: pytest.MonkeyPatch):
     finally:
         token_count._transformers_tokenizer.cache_clear()
     assert len(loads) == 1
+
+
+def test_models_dev_filter_without_key_mapping_is_unavailable():
+    """A filter we can't check a key for isn't assumed usable (the catalog is)."""
+    assert not ModelsDevProvider("alibaba").is_available()
+    assert ModelsDevProvider().is_available()
