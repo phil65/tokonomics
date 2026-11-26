@@ -78,7 +78,7 @@ Python 3.13/3.14 x Linux/macOS/Windows (3.14 is `continue-on-error`).
 
 ## Conventions
 
-- Python >= 3.13, `from __future__ import annotations`, Google-style docstrings, line length 100.
+- Python >= 3.14, no `from __future__ import annotations` (PEP 649; banned via ruff TID251), Google-style docstrings, line length 100.
 - Network calls go through `anyenv` (`get_json`, `post`, ...), not httpx2 directly.
 - Heavy or optional imports are done inside functions; keep `import tokonomics` cheap and
   free of optional deps.
