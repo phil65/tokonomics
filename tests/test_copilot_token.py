@@ -53,3 +53,34 @@ async def test_token_reused_while_valid(manager):
     assert await m.get_token() == "tok-1"
     assert await m.get_token() == "tok-1"
     assert len(calls) == 1
+
+
+async def test_provider_uses_endpoint_from_token_response(monkeypatch: pytest.MonkeyPatch):
+    """The models URL comes from the token's ``endpoints.api``, fetched before the request."""
+    from tokonomics.model_discovery.copilot_provider import provider as provider_mod
+
+    m = CopilotTokenManager()
+    m._github_oauth_token = "gho_test"
+
+    async def fake_get_json(*args: Any, **kwargs: Any) -> dict[str, Any]:
+        return {
+            "token": "tok",
+            "expires_at": time.time() + 3600,
+            "endpoints": {"api": "https://api.business.githubcopilot.com"},
+        }
+
+    urls: list[str] = []
+
+    class FakeResponse:
+        async def json(self) -> dict[str, Any]:
+            return {"data": []}
+
+    async def fake_get(url: str, **kwargs: Any) -> FakeResponse:
+        urls.append(url)
+        return FakeResponse()
+
+    monkeypatch.setattr(anyenv, "get_json", fake_get_json)
+    monkeypatch.setattr(anyenv, "get", fake_get)
+    monkeypatch.setattr(provider_mod, "token_manager", m)
+    await provider_mod.CopilotProvider().get_models()
+    assert urls == ["https://api.business.githubcopilot.com/models"]

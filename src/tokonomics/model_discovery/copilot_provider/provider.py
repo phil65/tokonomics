@@ -113,6 +113,8 @@ class CopilotProvider(ModelProvider):
 
         try:
             headers = await self._token_manager.generate_headers()
+            # The token response names the account's API endpoint (Business/Enterprise).
+            self.base_url = self._token_manager._api_endpoint
             url = f"{self.base_url}/models"
             response = await anyenv.get(url, headers=headers, timeout=30)
             data = await response.json()
