@@ -21,19 +21,22 @@ if TYPE_CHECKING:
 MODELS_CACHE_TTL = 86400
 """Seconds a provider's model list is reused, on disk and in memory (24 hours)."""
 
-type _Key = tuple[str, tuple[tuple[str, str], ...]]
+type _Key = tuple[str, str | None, tuple[tuple[str, str], ...], tuple[tuple[str, str], ...]]
 
 _parsed: dict[_Key, tuple[float, list[ModelInfo]]] = {}
 
 
 def _key(name: str, provider: ModelProvider) -> _Key:
-    return name, tuple(sorted(provider.headers.items()))
+    # Params too: Gemini sends its API key as ?key=, not as a header.
+    params = tuple(sorted((k, str(v)) for k, v in provider.params.items()))
+    base_url = getattr(provider, "base_url", None)
+    return name, base_url, tuple(sorted(provider.headers.items())), params
 
 
 def get_cached(name: str, provider: ModelProvider) -> list[ModelInfo] | None:
-    """The provider's parsed model list, if fetched within ``MODELS_CACHE_TTL``."""
+    """The provider's parsed model list, if fetched within its ``models_cache_ttl``."""
     entry = _parsed.get(_key(name, provider))
-    if entry is None or time.monotonic() - entry[0] > MODELS_CACHE_TTL:
+    if entry is None or time.monotonic() - entry[0] > provider.models_cache_ttl:
         return None
     return entry[1]
 

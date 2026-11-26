@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from functools import lru_cache
 from importlib.util import find_spec
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 
 if TYPE_CHECKING:
@@ -15,6 +15,13 @@ if TYPE_CHECKING:
 def has_library(name: str) -> bool:
     """Check if a Python package is available."""
     return bool(find_spec(name))
+
+
+@lru_cache(maxsize=1)
+def _transformers_tokenizer() -> Any:
+    from transformers import AutoTokenizer  # pyright: ignore[reportMissingImports]
+
+    return AutoTokenizer.from_pretrained("facebook/opt-125m")
 
 
 def count_tokens(text: str | Sequence[str], model: str | None = None) -> int:
@@ -48,9 +55,7 @@ def count_tokens(text: str | Sequence[str], model: str | None = None) -> int:
 
     # Try transformers as fallback
     if has_library("transformers"):
-        from transformers import AutoTokenizer  # pyright: ignore[reportMissingImports]
-
-        tokenizer = AutoTokenizer.from_pretrained("facebook/opt-125m")
+        tokenizer = _transformers_tokenizer()
 
         if isinstance(text, str):
             return len(tokenizer.encode(text))

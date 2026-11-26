@@ -33,8 +33,10 @@ the names exported from `src/tokonomics/__init__.py` as public API and keep them
     Ollama, models.dev).
   - `__init__.py`: `_PROVIDER_MAP`, `ProviderType` literal, `get_all_models` /
     `get_all_models_sync`. They keep each provider's parsed list in memory
-    (`cache.py`, `MODELS_CACHE_TTL`, per provider and headers) and filter it per call;
-    discovery requests are HTTP-cached for the same 24 h. Anthropic/OpenAI/Cohere/Cerebras/... are
+    (`cache.py`, the provider's `models_cache_ttl`, per provider, base URL, headers and
+    params) and filter it per call; discovery requests are HTTP-cached for 24 h (Ollama's
+    `/api/tags` not at all, its list for 60 s). Availability probes run in threads.
+    models.dev's `api.json` is downloaded once and shared by all its partials. Anthropic/OpenAI/Cohere/Cerebras/... are
     `partial(ModelsDevProvider, provider=...)`, not their own classes.
   - `variants.py`: reasoning/thinking level settings for pydantic-ai.
   - `copilot_provider/token_manager.py`: `CopilotTokenManager` (GitHub OAuth to Copilot token).

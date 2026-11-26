@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import asyncio
+import functools
 import logging
 import os
 from typing import TYPE_CHECKING, Any
@@ -18,8 +20,9 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
+@functools.cache
 def get_token_from_gh_cli() -> str | None:
-    """Get GitHub token from gh CLI."""
+    """Get GitHub token from gh CLI (run once per process)."""
     import subprocess
 
     try:
@@ -151,8 +154,9 @@ class GitHubProvider(ModelProvider):
 
     async def get_models(self) -> list[ModelInfo]:
         """Get both free and paid models through separate API calls."""
-        free_models = await self._fetch_models(is_free=True)
-        paid_models = await self._fetch_models(is_free=False)
+        free_models, paid_models = await asyncio.gather(
+            self._fetch_models(is_free=True), self._fetch_models(is_free=False)
+        )
         return free_models + paid_models
 
 

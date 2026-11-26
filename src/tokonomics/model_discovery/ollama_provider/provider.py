@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 import socket
 from typing import TYPE_CHECKING, Any
 
@@ -16,6 +17,9 @@ if TYPE_CHECKING:
 
 class OllamaProvider(ModelProvider):
     """Ollama local API provider."""
+
+    models_cache_ttl = 60
+    """A model pulled with ``ollama pull`` shows up within a minute."""
 
     def __init__(self, base_url: str = "http://localhost:11434") -> None:
         super().__init__()
@@ -44,15 +48,15 @@ class OllamaProvider(ModelProvider):
 
     async def get_models(self) -> list[ModelInfo]:
         """Fetch available models from Ollama using the /api/tags endpoint."""
-        from anyenv import HttpError, get_json, post_json
+        from anyenv import HttpError, get_json
 
         try:
+            # Not HTTP-cached: the list changes with every ollama pull / rm.
             data = await get_json(
                 f"{self.base_url}/api/tags",
                 headers=self.headers,
                 params=self.params,
-                cache=True,
-                cache_ttl=MODELS_CACHE_TTL,
+                cache=False,
                 return_type=dict,
             )
 
@@ -60,28 +64,29 @@ class OllamaProvider(ModelProvider):
                 msg = f"Invalid response format from {self.__class__.__name__}"
                 raise RuntimeError(msg)
 
-            # Fetch detailed info for each model
-            models = []
-            for item in data["models"]:
-                try:
-                    # Get detailed model info using /api/show
-                    detail_data = await post_json(
-                        f"{self.base_url}/api/show",
-                        json_data={"name": item["name"]},
-                        headers=self.headers,
-                        cache=True,
-                        cache_ttl=MODELS_CACHE_TTL,
-                        return_type=dict,
-                    )
-                    models.append(self._parse_model(item, detail_data))
-                except HttpError:
-                    # Fallback to basic info if detailed fetch fails
-                    models.append(self._parse_model(item))
+            models = list(await asyncio.gather(*(self._fetch_model(i) for i in data["models"])))
         except HttpError as e:
             msg = f"Failed to fetch models from {self.__class__.__name__}: {e}"
             raise RuntimeError(msg) from e
         else:
             return models
+
+    async def _fetch_model(self, item: dict[str, Any]) -> ModelInfo:
+        """Parse one listed model with its /api/show details (basic info if that fails)."""
+        from anyenv import HttpError, post_json
+
+        try:
+            detail_data = await post_json(
+                f"{self.base_url}/api/show",
+                json_data={"name": item["name"]},
+                headers=self.headers,
+                cache=True,
+                cache_ttl=MODELS_CACHE_TTL,
+                return_type=dict,
+            )
+        except HttpError:
+            return self._parse_model(item)
+        return self._parse_model(item, detail_data)
 
     def _parse_model(
         self, data: dict[str, Any], detail_data: dict[str, Any] | None = None

@@ -15,6 +15,9 @@ if TYPE_CHECKING:
 class ModelProvider(ABC):
     """Base class for model providers."""
 
+    models_cache_ttl: float = MODELS_CACHE_TTL
+    """Seconds discovery reuses this provider's parsed model list in memory."""
+
     def __init__(self) -> None:
         self.base_url: str
         self.headers: dict[str, str] = {}

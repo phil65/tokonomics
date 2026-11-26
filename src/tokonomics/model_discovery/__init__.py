@@ -110,6 +110,13 @@ _PROVIDER_MAP: dict[ProviderType, Callable[[], ModelProvider]] = {
 }
 
 
+def _is_available(provider_class: Callable[[], ModelProvider]) -> bool:
+    try:
+        return provider_class().is_available()
+    except Exception:  # noqa: BLE001
+        return False  # Provider initialization failed, skip it
+
+
 def get_all_models_sync(
     *,
     providers: Sequence[ProviderType | Literal["models.dev"]] | None = None,
@@ -139,15 +146,7 @@ def get_all_models_sync(
         selected_providers: list[ProviderType | Literal["models.dev"]] = list(providers)
     else:
         # Only use available providers when no specific providers are requested
-        selected_providers = []
-        for provider_name, provider_class in _PROVIDER_MAP.items():
-            try:
-                provider = provider_class()
-                if provider.is_available():
-                    selected_providers.append(provider_name)
-            except Exception:  # noqa: BLE001
-                # Provider initialization failed, skip it
-                continue
+        selected_providers = [n for n, cls in _PROVIDER_MAP.items() if _is_available(cls)]
     all_models: list[ModelInfo] = []
 
     def fetch_provider_models(
@@ -218,16 +217,13 @@ async def get_all_models(
     if providers is not None:
         selected_providers: list[ProviderType | Literal["models.dev"]] = list(providers)
     else:
-        # Only use available providers when no specific providers are requested
-        selected_providers = []
-        for provider_name, provider_class in _PROVIDER_MAP.items():
-            try:
-                provider = provider_class()
-                if provider.is_available():
-                    selected_providers.append(provider_name)
-            except Exception:  # noqa: BLE001
-                # Provider initialization failed, skip it
-                continue
+        # Only use available providers when no specific providers are requested.
+        # Probes may block (socket connect, `gh auth token`): run them in threads, at once.
+        names = list(_PROVIDER_MAP)
+        available = await asyncio.gather(
+            *(asyncio.to_thread(_is_available, _PROVIDER_MAP[name]) for name in names)
+        )
+        selected_providers = [n for n, ok in zip(names, available, strict=True) if ok]
     all_models: list[ModelInfo] = []
 
     async def fetch_provider_models(

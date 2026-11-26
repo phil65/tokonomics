@@ -2,10 +2,13 @@
 
 from __future__ import annotations
 
+import asyncio
 import contextlib
 from datetime import datetime
 import logging
 import os
+import threading
+import time
 from typing import TYPE_CHECKING, Any, Literal
 
 from tokonomics.model_discovery.base import ModelProvider
@@ -86,6 +89,68 @@ ModelsDevProviderType = Literal[
 ]
 
 
+_API_URL = "https://models.dev/api.json"
+# The parsed api.json, shared by all ModelsDevProvider partials (anthropic, zai, ...):
+# one download per MODELS_CACHE_TTL, concurrent callers on one loop share it.
+_api_data: tuple[float, dict[str, Any]] | None = None
+_api_inflight: dict[asyncio.AbstractEventLoop, asyncio.Task[dict[str, Any]]] = {}
+_api_lock = threading.Lock()
+
+
+def clear_api_cache() -> None:
+    """Forget the downloaded models.dev catalog."""
+    global _api_data
+    with _api_lock:
+        _api_data = None
+
+
+async def _download_api() -> dict[str, Any]:
+    from anyenv import get_json
+
+    logger.debug("Fetching models from models.dev API")
+    data = await get_json(_API_URL, cache=True, cache_ttl=MODELS_CACHE_TTL, return_type=dict)
+    if not isinstance(data, dict):
+        msg = "Invalid response format from models.dev"
+        raise RuntimeError(msg)  # noqa: TRY004
+    return data
+
+
+async def _get_api_data() -> dict[str, Any]:
+    global _api_data
+    entry = _api_data
+    if entry is not None and time.monotonic() - entry[0] < MODELS_CACHE_TTL:
+        return entry[1]
+    loop = asyncio.get_running_loop()
+    with _api_lock:
+        task = _api_inflight.get(loop)
+        if task is None:
+            task = _api_inflight[loop] = loop.create_task(_download_api())
+            task.add_done_callback(lambda _: _api_inflight.pop(loop, None))
+    data = await asyncio.shield(task)
+    with _api_lock:
+        _api_data = (time.monotonic(), data)
+    return data
+
+
+_API_KEY_VARS: dict[str, tuple[str, ...]] = {
+    "anthropic": ("ANTHROPIC_API_KEY",),
+    "openai": ("OPENAI_API_KEY",),
+    "cohere": ("COHERE_API_KEY", "CO_API_KEY"),
+    "cerebras": ("CEREBRAS_API_KEY",),
+    "deepseek": ("DEEPSEEK_API_KEY",),
+    "groq": ("GROQ_API_KEY",),
+    "chutes": ("CHUTES_API_KEY",),
+    "cloudflare-workers-ai": ("CF_API_TOKEN",),
+    "cortecs": ("CORTECS_API_KEY",),
+    "xai": ("XAI_API_KEY",),
+    "azure": ("AZURE_OPENAI_API_KEY",),
+    "fireworks-ai": ("FIREWORKS_API_KEY",),
+    "mistral": ("MISTRAL_API_KEY",),
+    "zai": ("ZAI_API_KEY", "ZHIPU_API_KEY"),
+    "moonshotai": ("MOONSHOT_API_KEY",),
+}
+
+
 class ModelsDevProvider(ModelProvider):
     """Models.dev API provider - aggregates models from all providers."""
 
@@ -96,35 +161,11 @@ class ModelsDevProvider(ModelProvider):
         self.params = {}
         self.provider_filter = provider
 
-    def is_available(self) -> bool:  # noqa: PLR0911
+    def is_available(self) -> bool:
         """Check whether the provider is available for use."""
-        if self.provider_filter == "anthropic":
-            return bool(os.environ.get("ANTHROPIC_API_KEY"))
-        if self.provider_filter == "openai":
-            return bool(os.environ.get("OPENAI_API_KEY"))
-        if self.provider_filter == "cohere":
-            return bool(os.environ.get("COHERE_API_KEY") or os.environ.get("CO_API_KEY"))
-        if self.provider_filter == "cerebras":
-            return bool(os.environ.get("CEREBRAS_API_KEY"))
-        if self.provider_filter == "deepseek":
-            return bool(os.environ.get("DEEPSEEK_API_KEY"))
-        if self.provider_filter == "groq":
-            return bool(os.environ.get("GROQ_API_KEY"))
-        if self.provider_filter == "chutes":
-            return bool(os.environ.get("CHUTES_API_KEY"))
-        if self.provider_filter == "cloudflare-workers-ai":
-            return bool(os.environ.get("CF_API_TOKEN"))
-        if self.provider_filter == "cortecs":
-            return bool(os.environ.get("CORTECS_API_KEY"))
-        if self.provider_filter == "xai":
-            return bool(os.environ.get("XAI_API_KEY"))
-        if self.provider_filter == "azure":
-            return bool(os.environ.get("AZURE_OPENAI_API_KEY"))
-        if self.provider_filter == "fireworks-ai":
-            return bool(os.environ.get("FIREWORKS_API_KEY"))
-        if self.provider_filter == "mistral":
-            return bool(os.environ.get("MISTRAL_API_KEY"))
-        return True
+        if self.provider_filter is None or self.provider_filter not in _API_KEY_VARS:
+            return True
+        return any(os.environ.get(var) for var in _API_KEY_VARS[self.provider_filter])
 
     def _parse_model(self, data: dict[str, Any]) -> ModelInfo:
         """Parse models.dev API response into ModelInfo."""
@@ -196,74 +237,45 @@ class ModelsDevProvider(ModelProvider):
 
     async def get_models(self) -> list[ModelInfo]:
         """Fetch all models from models.dev API."""
-        from anyenv import HttpError, get_json
-
-        logger.debug("Fetching models from models.dev API")
-        data = await get_json(
-            f"{self.base_url}/api.json",
-            headers=self.headers,
-            params=self.params,
-            cache=True,
-            cache_ttl=MODELS_CACHE_TTL,
-            return_type=dict,
-        )
-
-        if not isinstance(data, dict):
-            msg = "Invalid response format from models.dev"
-            raise RuntimeError(msg)  # noqa: TRY004
+        from anyenv import HttpError
 
         try:
-            models = []
-            for provider_id, provider_data in data.items():
-                # Apply provider filter if specified
-                if self.provider_filter is not None and provider_id != self.provider_filter:
-                    continue
-
-                if not isinstance(provider_data, dict) or "models" not in provider_data:
-                    continue
-
-                provider_models = provider_data["models"]
-                if not isinstance(provider_models, dict):
-                    continue
-
-                for model_id, model_info in provider_models.items():
-                    if not isinstance(model_info, dict):
-                        continue
-
-                    # Add provider context to model data
-                    model_data = dict(model_info)
-                    model_data["id"] = model_id
-                    model_data["_provider_id"] = provider_id
-
-                    try:
-                        model = self._parse_model(model_data)
-                        models.append(model)
-                    except Exception as e:  # noqa: BLE001
-                        logger.warning(
-                            "Failed to parse model %s from provider %s: %s",
-                            model_id,
-                            provider_id,
-                            e,
-                        )
-                        continue
-
-            if self.provider_filter:
-                logger.debug(
-                    "Fetched %d models for provider %s via models.dev",
-                    len(models),
-                    self.provider_filter,
-                )
-            else:
-                logger.info(
-                    "Fetched %d models from %d providers via models.dev",
-                    len(models),
-                    len([p for p in data if isinstance(data[p], dict) and "models" in data[p]]),
-                )
+            data = await _get_api_data()
         except HttpError as e:
             msg = f"Failed to fetch models from models.dev: {e}"
             raise RuntimeError(msg) from e
-        else:
-            return models
+        if self.provider_filter is not None:
+            return self._parse_models(data)
+        # The whole catalog (~10k models, ~150 ms): parse off the event loop.
+        return await asyncio.to_thread(self._parse_models, data)
+
+    def _parse_models(self, data: dict[str, Any]) -> list[ModelInfo]:
+        models = []
+        for provider_id, provider_data in data.items():
+            if self.provider_filter is not None and provider_id != self.provider_filter:
+                continue
+            if not isinstance(provider_data, dict) or "models" not in provider_data:
+                continue
+            provider_models = provider_data["models"]
+            if not isinstance(provider_models, dict):
+                continue
+            for model_id, model_info in provider_models.items():
+                if not isinstance(model_info, dict):
+                    continue
+                # Add provider context to model data
+                model_data = dict(model_info)
+                model_data["id"] = model_id
+                model_data["_provider_id"] = provider_id
+                try:
+                    models.append(self._parse_model(model_data))
+                except Exception as e:  # noqa: BLE001
+                    logger.warning(
+                        "Failed to parse model %s from provider %s: %s", model_id, provider_id, e
+                    )
+        logger.debug(
+            "Parsed %d models from models.dev (filter: %s)", len(models), self.provider_filter
+        )
+        return models
 
 
 if __name__ == "__main__":
